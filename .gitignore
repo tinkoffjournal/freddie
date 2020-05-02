@@ -1,0 +1,5 @@
+venv
+main.py
+*.back
+*.pyc
+__pycache__
