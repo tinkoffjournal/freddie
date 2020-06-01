@@ -1,10 +1,28 @@
-.DEFAULT_GOAL := format
+.DEFAULT_GOAL := fmt
+DIR = freddie
 
-format:
-	isort --recursive .
-	black .
+fmt:
+	isort --recursive $(DIR)
+	black $(DIR)
+
+type:
+	mypy $(DIR)
+
+lint:
+	isort --recursive --check-only --diff $(DIR)
+	black --check $(DIR)
+	flake8 $(DIR)
+
+test:
+	pytest -vv
+
+cover:
+	coverage erase
+	coverage run --include=$(DIR)/* -m pytest
+	coverage report -m
 
 check:
-	isort --recursive --check-only --diff .
-	black --check .
-	flake8 --config=flake8.ini
+	make lint && make type
+
+run:
+	python tests/main.py

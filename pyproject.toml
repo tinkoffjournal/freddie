@@ -1,23 +1,64 @@
+[build-system]
+requires = ["flit_core >=2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "freddie"
+author = "Arseny Gabdullin"
+author-email = "a.gabdullin@tinkoff.ru"
+home-page = "https://github.com/tinkoffjournal/freddie"
+classifiers = [
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Typing :: Typed",
+    "Environment :: Web Environment",
+    "Framework :: AsyncIO",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet",
+    "License :: OSI Approved :: MIT License",
+]
+requires = [
+    "fastapi >=0.50.0",
+]
+description-file = "README.md"
+requires-python = ">=3.6"
+
+[tool.flit.metadata.requires-extra]
+test = [
+    "pytest >=4.0.0",
+    "pytest-asyncio",
+    "async-asgi-testclient",
+    "coverage",
+    "mypy",
+    "black",
+    "isort",
+    "flake8",
+]
+dev = [
+    "uvicorn"
+]
+
 [tool.black]
-target-version = ['py37']
+target-version = ['py36']
 skip-string-normalization = true
-exclude = '''
-(
-  /(
-      \.git
-    | \.mypy_cache
-    | venv
-  )/
-)
-'''
 
 [tool.isort]
 multi_line_output = 3
 include_trailing_comma = true
 use_parentheses = true
 line_length = 88
-skip_glob = ['venv']
 combine_as_imports = true
 combine_star = true
-known_third_party = ['pydantic', 'mock']
-know_standard_library = ['json']
+known_third_party = ['pydantic']

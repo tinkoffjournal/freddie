@@ -1,5 +1,0 @@
-fastapi
-peewee
-peewee-async
-pydantic
-starlette

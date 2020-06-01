@@ -1,5 +1,7 @@
-venv
-main.py
-*.back
+dist/
+venv/
+.mypy_cache
+.pytest_cache
+.coverage
+.ipython
 *.pyc
-__pycache__

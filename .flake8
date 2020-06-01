@@ -1,9 +1,11 @@
 [flake8]
 exclude =
-    .git,
-    venv,
+    .mypy_cache,
+    .pytest_cache,
+    .ipython,
 
-max-line-length = 88
+max-line-length = 120
+
 ignore =
     # do not assign a lambda expression, use a def
     E731,
