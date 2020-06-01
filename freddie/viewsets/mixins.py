@@ -5,7 +5,7 @@ from .dependencies import FilterBy, Paginator, ResponseFields
 from .generics import Dependency, PredefinedDependencies
 
 
-class FieldedViewset:
+class FieldedViewsetMixin:
     schema: SchemaClass
 
     def _get_dependency(self) -> Dependency:
@@ -18,14 +18,18 @@ class FieldedViewset:
         )
 
 
-class FieldedListViewset(FieldedViewset):
+class FieldedListViewset(FieldedViewsetMixin):
     def get_list_dependencies(self) -> PredefinedDependencies:
         return super().get_list_dependencies() + (self._get_dependency(),)  # type: ignore
 
 
-class FieldedRetrieveViewset(FieldedViewset):
+class FieldedRetrieveViewset(FieldedViewsetMixin):
     def get_retrieve_dependencies(self) -> PredefinedDependencies:
         return super().get_retrieve_dependencies() + (self._get_dependency(),)  # type: ignore
+
+
+class FieldedViewset(FieldedListViewset, FieldedRetrieveViewset):
+    ...
 
 
 class PaginatedListViewset:

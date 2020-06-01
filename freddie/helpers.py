@@ -1,4 +1,9 @@
-from inspect import Parameter, Signature, signature as get_signature
+from inspect import (
+    Parameter,
+    Signature,
+    iscoroutinefunction,
+    signature as get_signature,
+)
 from itertools import chain
 from operator import attrgetter
 from typing import (
@@ -8,6 +13,7 @@ from typing import (
     Callable,
     Iterable,
     Iterator,
+    List,
     Mapping,
     Tuple,
     Type,
@@ -15,6 +21,7 @@ from typing import (
 
 from fastapi import Depends
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 
 
 def is_mappable(obj: Any) -> bool:
@@ -31,6 +38,16 @@ def is_async_iterable(obj: Any) -> bool:
 
 def is_awaitable(obj: Any) -> bool:
     return isinstance(obj, Awaitable)
+
+
+async def run_async_or_thread(handler: Callable, *args: Any, **kwargs: Any) -> Any:
+    if iscoroutinefunction(handler):
+        result = handler(*args, **kwargs)
+        # Async generators cannot be awaited
+        if is_awaitable(result):
+            return await result
+        return result
+    return await run_in_threadpool(handler, *args, **kwargs)
 
 
 def distinct(sequence: Iterable, key_getter: Callable) -> Iterator:
@@ -54,6 +71,7 @@ def is_valid_type(type_: Type, whitelist: Iterable[Type]) -> bool:
 
 
 _ENDPOINT_PARAM_KINDS = {Parameter.KEYWORD_ONLY, Parameter.POSITIONAL_OR_KEYWORD}
+_POS_PARAM_KINDS = {Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD}
 
 
 def patch_endpoint_signature(
@@ -69,7 +87,14 @@ def patch_endpoint_signature(
     )
     # Parameters defined in handler function can overlap predefined ones from dependencies,
     # so we need to filter it out, as dependency/endpoint params have greater priority
-    unique_parameters = list(distinct(parameters, attrgetter('name')))
+    unique_parameters: List[Parameter] = []
+    pos_param_index = 0
+    for param in distinct(parameters, attrgetter('name')):
+        if param.kind in _POS_PARAM_KINDS:
+            unique_parameters.insert(pos_param_index, param)
+            pos_param_index += 1
+        else:
+            unique_parameters.append(param)
     endpoint.__signature__ = signature.replace(parameters=unique_parameters)  # type: ignore
     return endpoint
 

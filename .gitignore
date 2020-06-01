@@ -3,5 +3,6 @@ venv/
 .mypy_cache
 .pytest_cache
 .coverage
+htmlcov
 .ipython
 *.pyc

@@ -39,6 +39,8 @@ requires-python = ">=3.6"
 test = [
     "pytest >=4.0.0",
     "pytest-asyncio",
+    "pytest-cov",
+    "pytest-randomly",
     "async-asgi-testclient",
     "coverage",
     "mypy",

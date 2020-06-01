@@ -18,7 +18,12 @@ from pydantic.fields import FieldInfo
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from ..helpers import extract_types, is_valid_type, patch_endpoint_signature
+from ..helpers import (
+    extract_types,
+    is_valid_type,
+    patch_endpoint_signature,
+    run_async_or_thread,
+)
 from ..schemas import ApiComponentName, Schema, SchemaClass, validate_schema
 from .dependencies import ResponseFields, ResponseFieldsDict
 from .route_decorator import get_declared_routes
@@ -162,7 +167,7 @@ class ListViewset(GenericViewSet):
         response_model = List[self.schema]  # type: ignore
 
         async def endpoint(*, request: Request, **params: Any) -> Any:
-            objects = await self.list(request=request, **params)
+            objects = await run_async_or_thread(self.list, request=request, **params)
             return await self.response(objects, fields=params.get(FIELDS_PARAM_NAME))
 
         self.add_api_route(
@@ -202,7 +207,9 @@ class RetrieveViewset(GenericViewSet):
             request: Request,
             **params: Any,
         ) -> Any:
-            obj = await self.retrieve(pk, request=request, **params)
+            obj = await run_async_or_thread(
+                self.retrieve, pk, request=request, **params
+            )
             return await self.response(obj, fields=params.get(FIELDS_PARAM_NAME))
 
         self.add_api_route(
@@ -264,7 +271,7 @@ class CreateViewset(GenericViewSet):
         )
 
     async def get_created_obj(self, body: Schema, *, request: Request) -> Any:
-        return await self.create(body, request=request)
+        return await run_async_or_thread(self.create, body, request=request)
         # To be redefined in subclasses:
         # return await self.get_object_or_404(
         #     await self.create(body, request=request), fields=self._response_fields_full_config
@@ -356,7 +363,9 @@ class UpdateViewset(GenericViewSet):
     async def get_updated_obj(
         self, pk: Any, body: Schema, *, partial: bool, request: Request
     ) -> Any:
-        return await self.update(pk, body, partial=partial, request=request)
+        return await run_async_or_thread(
+            self.update, pk, body, partial=partial, request=request
+        )
         # To be redefined in subclasses:
         # fields = self._response_fields_full_config
         # return await self.get_object_or_404(
@@ -385,7 +394,7 @@ class DestroyViewset(GenericViewSet):
             signals: signals_dispatcher = Depends(),  # type: ignore
         ) -> Response:
             obj = await self.get_object_or_404(pk)
-            await self.destroy(pk, request=request)
+            await run_async_or_thread(self.destroy, pk, request=request)
             signals.send(Signal.POST_DELETE, obj)  # type: ignore
             return Response('', status_code=int(HTTPStatus.NO_CONTENT))
 

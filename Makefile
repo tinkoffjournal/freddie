@@ -16,10 +16,8 @@ lint:
 test:
 	pytest -vv
 
-cover:
-	coverage erase
-	coverage run --include=$(DIR)/* -m pytest
-	coverage report -m
+cov:
+	pytest --cov=$(DIR) --cov-report term:skip-covered
 
 check:
 	make lint && make type

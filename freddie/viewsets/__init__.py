@@ -14,6 +14,7 @@ from .generics import (
 from .mixins import (
     FieldedListViewset,
     FieldedRetrieveViewset,
+    FieldedViewset,
     FilterableListViewset,
     PaginatedListViewset,
 )
@@ -22,6 +23,7 @@ from .route_decorator import route
 __all__ = (
     'CreateViewset',
     'DestroyViewset',
+    'FieldedViewset',
     'FieldedListViewset',
     'FieldedRetrieveViewset',
     'FilterableListViewset',

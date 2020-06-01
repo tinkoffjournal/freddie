@@ -23,9 +23,5 @@ class NotFound(Problem):
     status_code = HTTPStatus.NOT_FOUND
 
 
-class NotImplementedAction(Problem):
-    status_code = HTTPStatus.NOT_IMPLEMENTED
-
-
 class ServerError(Problem):
     status_code = HTTPStatus.INTERNAL_SERVER_ERROR

@@ -3,14 +3,15 @@ from http import HTTPStatus
 import pytest
 from async_asgi_testclient import TestClient
 
-from .main import app, Item, test_item, test_items_list
+from freddie.viewsets.dependencies import Paginator
+from .main import app, Item, test_item, test_items_seq
 
 client = TestClient(app)
 pytestmark = pytest.mark.asyncio
 api_prefixes = {
     'argnames': 'prefix',
-    'argvalues': ['', '/other'],
-    'ids': ['unvalidated', 'validated']
+    'argvalues': ['/unvalidated', '/validated', '/sync'],
+    'ids': ['unvalidated', 'validated', 'synchronous']
 }
 pk = 42
 
@@ -24,7 +25,7 @@ class TestBasicViewSet:
     async def test_list(self, prefix):
         response = await client.get(prefix + '/')
         assert response.status_code == HTTPStatus.OK
-        assert response.json() == await Item.serialize(test_items_list)
+        assert response.json() == await Item.serialize(test_items_seq)
 
     @pytest.mark.parametrize(**api_prefixes)
     async def test_retrieve(self, prefix):
@@ -66,13 +67,57 @@ class TestBasicViewSet:
         assert response.status_code == HTTPStatus.NO_CONTENT
         assert response.text == ''
 
+    ROUTE_QUERY_PARAMS = {'foo': 'one', 'bar': 42}
+
     @pytest.mark.parametrize('path', [
-        '/listroute', f'/{pk}/detail', '/listcustom', f'/{pk}/detailcustom'
+        '/unvalidated/listroute', f'/unvalidated/{pk}/detail',
+        '/unvalidated/listcustom', f'/unvalidated/{pk}/detailcustom'
     ], ids=['list', 'detail', 'list_named', 'detail_named'])
     async def test_custom_route(self, path):
-        query_params = {'foo': 'one', 'bar': 42}
         invalid_response = await client.get(path)
         assert invalid_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        response = await client.get(path, query_string=query_params)
+        response = await client.get(path, query_string=self.ROUTE_QUERY_PARAMS)
         assert response.status_code == HTTPStatus.OK
-        assert response.json() == query_params
+        assert response.json() == self.ROUTE_QUERY_PARAMS
+
+
+class TestPaginatedViewSet:
+    @pytest.mark.parametrize('limit,offset', [
+        (Paginator.default_limit, Paginator.default_offset),
+        (10, 3),
+    ])
+    async def test_default_pagination(self, limit, offset):
+        response = await client.get('/paginated/', query_string={'limit': limit, 'offset': offset})
+        assert response.status_code == HTTPStatus.OK
+        response_data = response.json()
+        assert len(response_data) == limit
+        assert response_data[limit - 1]['id'] == limit + offset
+
+    @pytest.mark.parametrize('limit,offset', [
+        ('string', 10),
+        (20, 'foobar'),
+        (Paginator.max_limit + 1, 0),
+        (Paginator.max_limit + 100, 200),
+    ])
+    async def test_invalid_values(self, limit, offset):
+        response = await client.get('/paginated/', query_string={'limit': limit, 'offset': offset})
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+class TestFieldedViewSet:
+    async def test_keys_passed(self):
+        fields = ['title']
+        response = await client.get(f'/fielded/{pk}', query_string={'fields': ','.join(fields)})
+        assert response.status_code == HTTPStatus.OK
+        response_data = response.json()
+        for field in fields:
+            assert field in response_data
+
+
+async def test_http_exceptions():
+    detail = 'NOTFOUND'
+    header = 'custom-header'
+    response = await client.get('/notfound', query_string={'detail': detail, 'header': header})
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json().get('detail') == detail
+    assert response.headers['x-custom-header'] == header
