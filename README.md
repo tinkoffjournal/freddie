@@ -17,7 +17,7 @@ from freddie.exceptions import NotFound
 from freddie.schemas import Schema
 from freddie.viewsets import FieldedRetrieveViewset, PaginatedListViewset, route, ViewSet
 
-# Schema is just a superset of Pydantic model
+# Schema is just a subset of Pydantic model
 class Post(Schema):
     id: int = ...
     title: str = ...
@@ -25,13 +25,13 @@ class Post(Schema):
     metadata: dict = {}
 
     class Config:
-        # By default, only post id & title will be returned in API response
+        # By default, only post ID & title will be returned in response
         default_readable_fields = {'id', 'title'}
 
 
 post = Post(id=1, title='Freddie', content='Mercury', metadata={'views': 42})
 
-# Viewset is a full-packed CRUD class, so all actions (list/retrieve/create/update/delete) must be implemented,
+# ViewSet is a full-packed CRUD class, so all actions (list/retrieve/create/update/delete) must be implemented,
 # other combinations are also possible, as in DRF (see freddie.viewsets)
 class PostViewSet(
     FieldedRetrieveViewset,  # This mixin allows retrieving non-default schema fields from query params
@@ -45,12 +45,13 @@ class PostViewSet(
         default_limit = 10
         max_limit = 100
 
+    # Async generators are supported
     async def list(self, *, paginator, **params):
         for i in range(1, paginator.limit + 1):
             item_id = i + paginator.offset
             yield Post(id=item_id, title=f'Freddie #{item_id}')
 
-    # Both sync & async handlers are supported, thanks to Starlette
+    # Both sync & async handlers are supported
     def retrieve(self, pk: int, **params):
         if pk != post.id:
             raise NotFound
@@ -80,5 +81,62 @@ class PostViewSet(
 
 
 app = FastAPI()
+# All viewsets are regular FastAPI routers
 app.include_router(PostViewSet(), prefix='/posts')
 ```
+
+Example API requests:
+
+`GET /posts/?limit=3&offset=1` → 200 OK
+```json
+[
+    {
+        "title": "Freddie #2",
+        "id": 2
+    },
+    {
+        "title": "Freddie #3",
+        "id": 3
+    },
+    {
+        "title": "Freddie #4",
+        "id": 4
+    }
+]
+```
+
+`GET /posts/1/?fields=content,metadata` → 200 OK
+```json
+{
+    "title": "Freddie",
+    "id": 1,
+    "content": "Mercury",
+    "metadata": {
+        "views": 42
+    }
+}
+```
+
+`POST /posts/ {"id": 2, "title": "Another Freddie"}` → 201 CREATED
+```json
+{
+    "title": "Another Freddie",
+    "id": 2,
+    "content": "",
+    "metadata": {}
+}
+```
+
+`PATCH /posts/1/ {"content": "Broke free"}` → 200 OK
+```json
+{
+    "title": "Freddie",
+    "id": 1,
+    "content": "Broke free",
+    "metadata": {
+        "views": 42
+    },
+}
+```
+
+`DELETE /posts/1/` → 204 NO CONTENT

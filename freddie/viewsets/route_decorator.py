@@ -17,9 +17,7 @@ else:
 VIEWSET_ROUTE_FLAG = 'is_viewset_route'
 
 
-def route(
-    detail: bool = False, path: str = None, name: str = None, **kwargs: Any
-) -> Callable:
+def route(detail: bool = False, path: str = None, name: str = None, **kwargs: Any) -> Callable:
     def decorator(endpoint: ViewSetRoute) -> ViewSetRoute:
         setattr(endpoint, VIEWSET_ROUTE_FLAG, True)
         endpoint_name = name or getattr(endpoint, '__name__')

@@ -29,11 +29,11 @@ class Schema(BaseModel):
     @classmethod
     def optional(cls, class_name: str = None) -> 'SchemaClass':
         class_name = class_name or f'{cls.__name__}Optional'
-        fields = {
-            field_name: (field.type_, None)
-            for field_name, field in cls.__fields__.items()
-        }
-        return create_model(class_name, __base__=cls, __module__=cls.__module__, **fields)  # type: ignore
+        fields = {field_name: (field.type_, None) for field_name, field in cls.__fields__.items()}
+        model = create_model(
+            class_name, __base__=cls, __module__=cls.__module__, **fields  # type: ignore
+        )
+        return model  # type: ignore
 
     @classmethod
     def get_config(cls) -> Type[SchemaConfig]:
@@ -123,9 +123,7 @@ class Schema(BaseModel):
             serialized[field_name] = field_value
         return jsonable_encoder(serialized) if jsonable else serialized
 
-    async def get_serialized(
-        self, fields: Optional[Mapping] = None, jsonable: bool = True
-    ) -> Any:
+    async def get_serialized(self, fields: Optional[Mapping] = None, jsonable: bool = True) -> Any:
         return await self.serialize(self, fields=fields, jsonable=jsonable)
 
     @classmethod
@@ -160,17 +158,14 @@ class ApiComponentName(str):
             raise ValueError('API component name must not be empty')
         elif not cls.REGEX.fullmatch(value):
             raise ValueError(
-                f'API component name "{value}" is invalid'
-                f'(allowed pattern: {cls.REGEX.pattern})'
+                f'API component name "{value}" is invalid' f'(allowed pattern: {cls.REGEX.pattern})'
             )
         return cls(value.lower())
 
 
 def validate_schema(schema: Any) -> None:
     assert isinstance(schema, type), f'{schema} is not a class'
-    assert issubclass(
-        schema, Schema
-    ), f'{schema} is not subclassed from {Schema.__name__}'
+    assert issubclass(schema, Schema), f'{schema} is not subclassed from {Schema.__name__}'
 
 
 def is_subschema(type_: Any) -> bool:

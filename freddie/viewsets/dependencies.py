@@ -1,17 +1,6 @@
 from collections import UserDict
 from re import compile as re_compile, sub as re_sub
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterator,
-    Match,
-    Optional,
-    Pattern,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, Callable, Dict, Iterator, Match, Optional, Pattern, Tuple, Type, Union
 
 from fastapi import Query
 from pydantic import BaseConfig
@@ -31,10 +20,7 @@ class Paginator:
     PARAM_NAME: str = 'paginator'
 
     _limit_query = Query(
-        default=default_limit,
-        ge=1,
-        le=max_limit,
-        description='Maximum number of items to list',
+        default=default_limit, ge=1, le=max_limit, description='Maximum number of items to list',
     )
     _offset_query = Query(
         default=default_offset, ge=0, le=max_offset, description='Items list offset'
@@ -104,9 +90,7 @@ class ResponseFields(UserDict):
         subfields = {}
 
         def get_subfields(matchobj: Match) -> str:
-            subfields[matchobj.group('field')] = set(
-                matchobj.group('subfields').split(',')
-            )
+            subfields[matchobj.group('field')] = set(matchobj.group('subfields').split(','))
             return ''
 
         query_param = re_sub(cls.REGEX, get_subfields, query_param)
@@ -116,9 +100,7 @@ class ResponseFields(UserDict):
         return {**rest, **subfields}
 
     @classmethod
-    def setup(
-        cls, allowed: SchemaFields, defaults: ResponseFieldsConfig
-    ) -> Type['ResponseFields']:
+    def setup(cls, allowed: SchemaFields, defaults: ResponseFieldsConfig) -> Type['ResponseFields']:
         return type(cls.__name__, (cls,), {'allowed': allowed, 'defaults': defaults})
 
 

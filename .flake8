@@ -4,7 +4,7 @@ exclude =
     .pytest_cache,
     .ipython,
 
-max-line-length = 120
+max-line-length = 100
 
 ignore =
     # do not assign a lambda expression, use a def
