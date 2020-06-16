@@ -19,6 +19,13 @@ from .mixins import (
     PaginatedListViewset,
 )
 from .route_decorator import route
+from .sql import (
+    ListCreateModelViewSet,
+    ModelViewSet,
+    ReadOnlyModelViewSet,
+    RetrieveUpdateModelDestroyViewSet,
+    RetrieveUpdateModelViewSet,
+)
 
 __all__ = (
     'CreateViewset',
@@ -38,4 +45,9 @@ __all__ = (
     'UpdateViewset',
     'ViewSet',
     'route',
+    'ReadOnlyModelViewSet',
+    'ListCreateModelViewSet',
+    'RetrieveUpdateModelViewSet',
+    'RetrieveUpdateModelDestroyViewSet',
+    'ModelViewSet',
 )

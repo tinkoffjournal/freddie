@@ -1,6 +1,6 @@
 from collections import UserDict
 from re import compile as re_compile, sub as re_sub
-from typing import Any, Callable, Dict, Iterator, Match, Optional, Pattern, Tuple, Type, Union
+from typing import Any, Dict, Iterator, Match, Optional, Pattern, Tuple, Type, Union
 
 from fastapi import Query
 from pydantic import BaseConfig
@@ -47,25 +47,13 @@ class Paginator:
 
 
 class ResponseFieldsQuery(str):
-    REGEX: Pattern = re_compile(r'[\w(),]+')
+    REGEX: Pattern = re_compile(r'[a-zA-Z(),-_]+')
     param = Query(
         default=None,
         description='Additional instance fields included to response',
         regex=REGEX.pattern,
         example='field(subfield1,subfield2),other_field',
     )
-
-    @classmethod
-    def __get_validators__(cls) -> Iterator[Callable]:
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: str) -> 'ResponseFieldsQuery':
-        if not cls.REGEX.fullmatch(value):
-            raise ValueError(
-                f'Invalid response fields config. Allowed pattern: {cls.REGEX.pattern}'
-            )
-        return cls(value)
 
 
 class ResponseFields(UserDict):
@@ -117,7 +105,7 @@ class FilterBy:
     @classmethod
     def setup(cls, dependency_class: Type) -> Type['FilterBy']:
         if dependency_class is cls:
-            return cls
+            return cls  # pragma: no cover
         data_cls = dataclass(dependency_class, config=cls.ModelConfig, frozen=True)
         cls.fields = data_cls.__pydantic_model__.__fields__  # type: ignore
         return type(cls.__name__, (cls, data_cls), {})  # type: ignore

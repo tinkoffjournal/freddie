@@ -17,10 +17,13 @@ test:
 	pytest -vv
 
 cov:
-	pytest --cov=$(DIR) --cov-report term:skip-covered
+	pytest --cov=$(DIR) --cov-report term-missing:skip-covered
 
 check:
 	make lint && make type
 
 run:
-	python tests/main.py
+	python -m tests.main run
+
+db:
+	python -m tests.main create-db

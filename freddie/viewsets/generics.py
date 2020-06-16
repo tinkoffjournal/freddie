@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from http import HTTPStatus
-from typing import Any, AsyncIterable, Dict, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, AsyncIterable, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Path, Response
@@ -115,6 +115,9 @@ class GenericViewSet(APIRouter, ABC):
         content = await self.schema.serialize(content, fields)
         return self.default_response_class(content=content, status_code=status_code)
 
+    async def perform_api_action(self, handler: Callable, *args: Any, **kwargs: Any) -> Any:
+        return await run_async_or_thread(handler, *args, **kwargs)
+
     @abstractmethod
     def api_actions(self) -> None:
         ...
@@ -140,7 +143,7 @@ class ListViewset(GenericViewSet):
         response_model = List[self.schema]  # type: ignore
 
         async def endpoint(*, request: Request, **params: Any) -> Any:
-            objects = await run_async_or_thread(self.list, request=request, **params)
+            objects = await self.perform_api_action(self.list, request=request, **params)
             return await self.response(objects, fields=params.get(FIELDS_PARAM_NAME))
 
         self.add_api_route(
@@ -159,7 +162,7 @@ class ListViewset(GenericViewSet):
 
     @abstractmethod
     async def list(self, *, request: Request, **params: Any) -> Union[Iterable, AsyncIterable]:
-        ...
+        ...  # pragma: no cover
 
 
 class RetrieveViewset(GenericViewSet):
@@ -178,7 +181,7 @@ class RetrieveViewset(GenericViewSet):
             request: Request,
             **params: Any,
         ) -> Any:
-            obj = await run_async_or_thread(self.retrieve, pk, request=request, **params)
+            obj = await self.perform_api_action(self.retrieve, pk, request=request, **params)
             return await self.response(obj, fields=params.get(FIELDS_PARAM_NAME))
 
         self.add_api_route(
@@ -197,7 +200,7 @@ class RetrieveViewset(GenericViewSet):
 
     @abstractmethod
     async def retrieve(self, pk: Any, *, request: Request, **params: Any) -> Any:
-        ...
+        ...  # pragma: no cover
 
 
 class CreateViewset(GenericViewSet):
@@ -213,8 +216,9 @@ class CreateViewset(GenericViewSet):
             *,
             request: Request,
             signals: signals_dispatcher = Depends(),  # type: ignore
+            **params: Any,
         ) -> Any:
-            obj = await self.get_created_obj(body, request=request)
+            obj = await self.perform_api_action(self.create, body, request=request, **params)
             signals.send(Signal.POST_SAVE, obj, created=True)  # type: ignore
             return await self.response(obj, status_code, fields=self._response_fields_full_config)
 
@@ -232,16 +236,9 @@ class CreateViewset(GenericViewSet):
             tags=self._openapi_tags,
         )
 
-    async def get_created_obj(self, body: Schema, *, request: Request) -> Any:
-        return await run_async_or_thread(self.create, body, request=request)
-        # To be redefined in subclasses:
-        # return await self.get_object_or_404(
-        #     await self.create(body, request=request), fields=self._response_fields_full_config
-        # )
-
     @abstractmethod
-    async def create(self, body: Schema, *, request: Request) -> Any:
-        ...
+    async def create(self, body: Schema, *, request: Request, **params: Any) -> Any:
+        ...  # pragma: no cover
 
 
 class UpdateViewset(GenericViewSet):
@@ -267,10 +264,13 @@ class UpdateViewset(GenericViewSet):
             *,
             request: Request,
             signals: signals_dispatcher = Depends(),  # type: ignore
+            **params: Any,
         ) -> Any:
-            obj = await self.get_object_or_404(pk)
+            obj = await self.get_object_or_404(pk, fields=self._response_fields_full_config)
             pk = getattr(obj, 'pk', pk)
-            updated_obj = await self.get_updated_obj(pk, body, partial=False, request=request)
+            updated_obj = await self.perform_api_action(
+                self.update, pk, body, partial=False, request=request, **params
+            )
             signals.send(  # type: ignore
                 Signal.POST_SAVE, updated_obj, obj_before_update=obj, created=False
             )
@@ -283,9 +283,11 @@ class UpdateViewset(GenericViewSet):
             request: Request,
             signals: signals_dispatcher = Depends(),  # type: ignore
         ) -> Any:
-            obj = await self.get_object_or_404(pk)
+            obj = await self.get_object_or_404(pk, fields=self._response_fields_full_config)
             pk = getattr(obj, 'pk', pk)
-            updated_obj = await self.get_updated_obj(pk, body, partial=True, request=request)
+            updated_obj = await self.perform_api_action(
+                self.update, pk, body, partial=True, request=request
+            )
             signals.send(  # type: ignore
                 Signal.POST_SAVE, updated_obj, obj_before_update=obj, created=False
             )
@@ -318,19 +320,9 @@ class UpdateViewset(GenericViewSet):
             tags=self._openapi_tags,
         )
 
-    async def get_updated_obj(
-        self, pk: Any, body: Schema, *, partial: bool, request: Request
-    ) -> Any:
-        return await run_async_or_thread(self.update, pk, body, partial=partial, request=request)
-        # To be redefined in subclasses:
-        # fields = self._response_fields_full_config
-        # return await self.get_object_or_404(
-        #     await self.update(pk, body, partial=partial, request=request), fields=fields
-        # )
-
     @abstractmethod
     async def update(self, pk: Any, body: Schema, *, request: Request, **params: Any) -> Any:
-        ...
+        ...  # pragma: no cover
 
 
 class DestroyViewset(GenericViewSet):
@@ -346,9 +338,10 @@ class DestroyViewset(GenericViewSet):
             *,
             request: Request,
             signals: signals_dispatcher = Depends(),  # type: ignore
+            **params: Any,
         ) -> Response:
-            obj = await self.get_object_or_404(pk)
-            await run_async_or_thread(self.destroy, pk, request=request)
+            obj = await self.get_object_or_404(pk, fields=self._response_fields_full_config)
+            await self.perform_api_action(self.destroy, pk, request=request, **params)
             signals.send(Signal.POST_DELETE, obj)  # type: ignore
             return Response('', status_code=int(HTTPStatus.NO_CONTENT))
 
@@ -365,8 +358,8 @@ class DestroyViewset(GenericViewSet):
         )
 
     @abstractmethod
-    async def destroy(self, pk: Any, *, request: Request) -> None:
-        ...
+    async def destroy(self, pk: Any, *, request: Request, **params: Any) -> None:
+        ...  # pragma: no cover
 
 
 ResponsesDict = Dict[Union[int, str], Dict[str, Any]]

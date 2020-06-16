@@ -2,7 +2,7 @@ import re
 from typing import Any, Callable, Dict, Iterator, Mapping, Optional, Pattern, Set, Type
 
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseConfig, BaseModel, create_model
+from pydantic import BaseConfig, BaseModel, ConstrainedStr, create_model
 
 from .helpers import is_async_iterable, is_awaitable, is_iterable, is_mappable
 
@@ -29,10 +29,17 @@ class Schema(BaseModel):
     @classmethod
     def optional(cls, class_name: str = None) -> 'SchemaClass':
         class_name = class_name or f'{cls.__name__}Optional'
-        fields = {field_name: (field.type_, None) for field_name, field in cls.__fields__.items()}
-        model = create_model(
-            class_name, __base__=cls, __module__=cls.__module__, **fields  # type: ignore
-        )
+        model = cls._cache.get(class_name)
+        if model is None:
+            fields = {
+                field_name: (field.type_, None) for field_name, field in cls.__fields__.items()
+            }
+            model = create_model(
+                class_name, __base__=cls, __module__=cls.__module__, **fields  # type: ignore
+            )
+            # Prevent class from recreation on each call,
+            # otherwise OpenAPI schema generation is broken
+            cls._cache[class_name] = model
         return model  # type: ignore
 
     @classmethod
@@ -63,6 +70,16 @@ class Schema(BaseModel):
         )
 
     @classmethod
+    def get_field_max_length(cls, field_name: str) -> Optional[int]:
+        field = cls.__fields__.get(field_name)
+        if not field:
+            return None
+        max_length = field.field_info.max_length
+        if issubclass(field.type_, ConstrainedStr):
+            max_length = field.type_.max_length
+        return int(max_length) if max_length else None
+
+    @classmethod
     def get_default_response_fields_config(cls) -> 'ResponseFieldsConfig':
         config = cls._cache.get('default_response_fields_config')
         if config is None:
@@ -91,14 +108,19 @@ class Schema(BaseModel):
 
     @classmethod
     async def serialize(
-        cls, obj: Any, fields: Optional[Mapping] = None, jsonable: bool = True
+        cls, obj: Any, fields: Optional[Mapping] = None, jsonable: bool = True, full: bool = False
     ) -> Any:
         if is_async_iterable(obj):
             obj = [obj async for obj in obj]
         is_mapping = is_mappable(obj)
         if not is_mapping and is_iterable(obj):
-            return [await cls.serialize(item, fields) for item in obj]
-        fields = fields or cls.get_default_response_fields_config()
+            return [await cls.serialize(item, fields, jsonable=jsonable, full=full) for item in obj]
+        if not fields:
+            fields = (
+                cls.get_full_response_fields_config()
+                if full
+                else cls.get_default_response_fields_config()
+            )
         serialized = {}
         for field_name, subfields in fields.items():
             if field_name not in cls.get_readable_fields():
@@ -109,8 +131,13 @@ class Schema(BaseModel):
             )
             if is_subschema(field.type_):
                 subschema: Type[Schema] = field.type_
+                subfields_config = (
+                    subschema.get_full_response_fields_config()
+                    if full
+                    else subschema.get_default_response_fields_config()
+                )
                 subattrs = {
-                    **subschema.get_default_response_fields_config(),
+                    **subfields_config,
                     **{
                         subattr: set()
                         for subattr in (subfields or [])
@@ -148,7 +175,7 @@ class ApiComponentName(str):
 
     @classmethod
     def __get_validators__(cls) -> Iterator[Callable]:
-        yield cls.validate
+        yield cls.validate  # pragma: no cover
 
     @classmethod
     def validate(cls, value: Any) -> 'ApiComponentName':

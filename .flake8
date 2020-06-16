@@ -1,15 +1,15 @@
 [flake8]
 exclude =
-    .mypy_cache,
-    .pytest_cache,
-    .ipython,
+	.mypy_cache,
+	.pytest_cache,
+	.ipython,
 
 max-line-length = 100
 
 ignore =
-    # do not assign a lambda expression, use a def
-    E731,
-    # line break before binary operator
-    W503,
-    # whitespace before ':' (compatibility with black)
-    E203
+	# do not assign a lambda expression, use a def
+	E731,
+	# line break before binary operator
+	W503,
+	# whitespace before ':' (compatibility with black)
+	E203

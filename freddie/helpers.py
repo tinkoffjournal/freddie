@@ -1,4 +1,11 @@
-from inspect import Parameter, Signature, iscoroutinefunction, signature as get_signature
+import logging
+from inspect import (
+    Parameter,
+    Signature,
+    isasyncgenfunction,
+    iscoroutinefunction,
+    signature as get_signature,
+)
 from itertools import chain
 from operator import attrgetter
 from typing import (
@@ -37,11 +44,9 @@ def is_awaitable(obj: Any) -> bool:
 
 async def run_async_or_thread(handler: Callable, *args: Any, **kwargs: Any) -> Any:
     if iscoroutinefunction(handler):
-        result = handler(*args, **kwargs)
-        # Async generators cannot be awaited
-        if is_awaitable(result):
-            return await result
-        return result
+        return await handler(*args, **kwargs)
+    elif isasyncgenfunction(handler):
+        return handler(*args, **kwargs)
     return await run_in_threadpool(handler, *args, **kwargs)
 
 
@@ -106,3 +111,13 @@ def _get_signature_parameters(signature: Signature) -> Iterator[Parameter]:
     for param in signature.parameters.values():
         if param.kind in _ENDPOINT_PARAM_KINDS:
             yield param
+
+
+SQL_LOGGER_NAME = 'peewee'
+
+
+def init_sql_logger() -> None:
+    logger = logging.getLogger(SQL_LOGGER_NAME)
+    logger.addHandler(logging.StreamHandler())
+    logger.setLevel(logging.DEBUG)
+    logger.propagate = False

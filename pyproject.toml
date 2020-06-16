@@ -36,13 +36,18 @@ description-file = "README.md"
 requires-python = ">=3.6"
 
 [tool.flit.metadata.requires-extra]
+db = [
+  "aiopg == 1.0.0",
+  "peewee-async == 0.7.0",
+  "peewee == 3.13.3",
+]
 test = [
   "pytest >=4.0.0",
   "pytest-asyncio",
   "pytest-cov",
   "pytest-randomly",
+  "python-dotenv",
   "async-asgi-testclient",
-  "coverage",
   "mypy",
   "black",
   "isort",
