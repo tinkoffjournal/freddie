@@ -8,6 +8,7 @@ from .generics import (
     RetrieveUpdateDestroyViewSet,
     RetrieveUpdateViewSet,
     RetrieveViewset,
+    UnsupportedViewset,
     UpdateViewset,
     ViewSet,
 )
@@ -19,13 +20,25 @@ from .mixins import (
     PaginatedListViewset,
 )
 from .route_decorator import route
-from .sql import (
-    ListCreateModelViewSet,
-    ModelViewSet,
-    ReadOnlyModelViewSet,
-    RetrieveUpdateModelDestroyViewSet,
-    RetrieveUpdateModelViewSet,
-)
+
+try:
+    from .sql import (
+        ListCreateModelViewSet,
+        ModelViewSet,
+        ReadOnlyModelViewSet,
+        RetrieveUpdateModelDestroyViewSet,
+        RetrieveUpdateModelViewSet,
+    )
+except ModuleNotFoundError:
+
+    class UnsupportedDBViewset(UnsupportedViewset):
+        error_message = 'database support not installed'
+
+    ListCreateModelViewSet = UnsupportedDBViewset  # type: ignore
+    ModelViewSet = UnsupportedDBViewset  # type: ignore
+    ReadOnlyModelViewSet = UnsupportedDBViewset  # type: ignore
+    RetrieveUpdateModelDestroyViewSet = UnsupportedDBViewset  # type: ignore
+    RetrieveUpdateModelViewSet = UnsupportedDBViewset  # type: ignore
 
 __all__ = (
     'CreateViewset',
