@@ -367,6 +367,13 @@ Dependency = Tuple[str, Type]
 PredefinedDependencies = Tuple[Dependency, ...]
 
 
+class UnsupportedViewset:
+    error_message: str = ''
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        raise RuntimeError(f'ViewSet cannot be used: {self.error_message}')  # pragma: no cover
+
+
 class ReadOnlyViewSet(ListViewset, RetrieveViewset):
     ...
 
