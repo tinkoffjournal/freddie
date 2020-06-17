@@ -1,7 +1,0 @@
-aiopg
-fastapi
-peewee
-peewee-async
-psycopg2-binary
-pydantic
-starlette

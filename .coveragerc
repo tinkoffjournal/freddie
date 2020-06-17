@@ -2,6 +2,7 @@
 omit = */db/constraints.py
 
 [report]
+precision = 2
 skip_empty = true
 sort = cover
 exclude_lines =
