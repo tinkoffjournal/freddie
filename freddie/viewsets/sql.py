@@ -76,15 +76,21 @@ class GenericModelViewSet(GenericViewSet):
             init_sql_logger()
 
     def validate_model(self, model: Type[Model]) -> Type[Model]:
-        assert isinstance(model, type), f'Schema for {type(self).__name__} must be a class'
+        cls_name = type(self).__name__
+        model_name = model.__name__
+        assert isinstance(model, type), f'Model for {cls_name} must be a class'
         assert issubclass(
             model, Model
-        ), f'Schema for {type(self).__name__} must be subclassed from {Model.__name__}'
-        assert model.db() is not None, f'{self.model.__name__} model database not set'
-        assert model.manager is not None, f'{model.__name__} model database manager not set'
+        ), f'Model for {cls_name} must be subclassed from {Model.__name__}'
+        assert model.db() is not None, f'{model_name} database not set'
+        assert model.manager is not None, f'{model_name} database manager not set'
         if self.secondary_lookup_field is not None:
-            assert len(self._pk_type_choices) > 1, 'Secondary lookup field type must be set'
-            assert self.secondary_lookup_field.unique, 'Non unique secondary lookup field'
+            assert (
+                len(self._pk_type_choices) > 1
+            ), f'{cls_name}: secondary lookup field type must be set'
+            assert (
+                self.secondary_lookup_field.unique
+            ), f'{cls_name}: non-unique secondary lookup field'
         return model
 
     def validate_schema_constraints(self) -> None:
