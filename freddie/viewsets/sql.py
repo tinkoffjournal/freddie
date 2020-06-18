@@ -58,6 +58,7 @@ class GenericModelViewSet(GenericViewSet):
     secondary_lookup_field: Optional[DBField] = None
     _model_fields: FieldsMap
     _model_props_dependencies: PropsDependenciesMap
+    _VALIDATE_SCHEMA_CONSTR: bool = False
 
     def __init__(
         self, *args: Any, model: Type[Model] = None, sql_debug: bool = False, **kwargs: Any
@@ -65,7 +66,9 @@ class GenericModelViewSet(GenericViewSet):
         super().__init__(*args, **kwargs)
         self.model = self.validate_model(model or self.model)
         self.pk_field = self.model.pk_field()
-        self._model_fields = self.get_validated_model_fields()
+        self._model_fields = self.model.fields()
+        if self._VALIDATE_SCHEMA_CONSTR:
+            self.validate_schema_constraints()
         self._model_props_dependencies = self.model.map_props_dependencies()
         if self.validate_response:
             self.schema.__config__.orm_mode = True
@@ -84,8 +87,7 @@ class GenericModelViewSet(GenericViewSet):
             assert self.secondary_lookup_field.unique, 'Non unique secondary lookup field'
         return model
 
-    def get_validated_model_fields(self) -> FieldsMap:
-        fields = {}
+    def validate_schema_constraints(self) -> None:
         writable_schema_fields = self.schema.get_writable_fields()
         for field_name, db_field in self.model.fields().items():
             if isinstance(db_field, CharField) and field_name in writable_schema_fields:
@@ -95,8 +97,6 @@ class GenericModelViewSet(GenericViewSet):
                         f'{self.schema.__name__}.{field_name} '
                         f'maxlength not set or greater than DB field maxlength'
                     )
-            fields[field_name] = db_field
-        return fields
 
     def lookup_expr(self, pk: Any) -> Expression:
         if self.secondary_lookup_field is not None and type(pk) != self._pk_type_choices[0]:
@@ -238,6 +238,8 @@ class ModelListViewset(GenericModelViewSet, ListViewset):
 
 
 class ModelCreateViewset(GenericModelViewSet, CreateViewset):
+    _VALIDATE_SCHEMA_CONSTR = True
+
     async def perform_api_action(self, handler: Callable, *args: Any, **kwargs: Any) -> Any:
         if handler == self.create:
             pk = await super().perform_api_action(handler, *args, **kwargs)
@@ -265,6 +267,8 @@ class ModelCreateViewset(GenericModelViewSet, CreateViewset):
 
 
 class ModelUpdateViewset(GenericModelViewSet, UpdateViewset):
+    _VALIDATE_SCHEMA_CONSTR = True
+
     async def perform_api_action(self, handler: Callable, *args: Any, **kwargs: Any) -> Any:
         if handler == self.update:
             pk = await super().perform_api_action(handler, *args, **kwargs)

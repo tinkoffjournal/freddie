@@ -47,7 +47,8 @@ class GenericViewSet(APIRouter, ABC):
     ):
         self.schema = schema or self.schema
         self.write_schema = write_schema or self.write_schema
-        self.set_validated_schemas_and_names()
+        self.validate_schema()
+        self.set_components_names()
         self.pk_type = pk_type or self.pk_type
         self._pk_type_choices = tuple(_get_pk_type_choices(self.pk_type))
         self.pk_parameter = pk_parameter or Path(
@@ -62,10 +63,12 @@ class GenericViewSet(APIRouter, ABC):
         self.add_routes_from_class_declaration()
         self.api_actions()
 
-    def set_validated_schemas_and_names(self) -> None:
+    def validate_schema(self) -> None:
         validate_schema(self.schema)
         if self.write_schema:
             validate_schema(self.write_schema)
+
+    def set_components_names(self) -> None:
         schema_config = self.schema.get_config()
         component_name = schema_config.api_component_name or self.schema.__name__
         self._component_name = ApiComponentName.validate(component_name)
