@@ -1,4 +1,5 @@
 import re
+from enum import Enum
 from typing import Any, Callable, Dict, Iterator, Mapping, Optional, Pattern, Set, Type
 
 from fastapi.encoders import jsonable_encoder
@@ -74,9 +75,14 @@ class Schema(BaseModel):
         field = cls.__fields__.get(field_name)
         if not field:
             return None
-        max_length = field.field_info.max_length
-        if issubclass(field.type_, ConstrainedStr):
-            max_length = field.type_.max_length
+        field_type = field.type_
+        if issubclass(field_type, ConstrainedStr):
+            max_length = field_type.max_length
+        elif isinstance(field_type, type) and issubclass(field_type, Enum):
+            members_lengths = (len(str(i.value)) for i in field_type)
+            max_length = max(members_lengths)
+        else:
+            max_length = field.field_info.max_length
         return int(max_length) if max_length else None
 
     @classmethod

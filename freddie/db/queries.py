@@ -2,7 +2,7 @@ from collections import defaultdict
 from operator import attrgetter
 from typing import Any, AsyncIterator, DefaultDict, Dict, Iterable, NamedTuple, Tuple
 
-from peewee import JOIN, SQL, Expression, Query
+from peewee import JOIN, SQL, Check, Expression, Query, fn
 
 from .fields import ManyToManyField
 from .models import Model
@@ -75,11 +75,13 @@ async def set_related(pk: Any, field: ManyToManyField, ids: Iterable[Any] = None
 
 
 __all__ = (
+    'Check',
     'Expression',
     'Query',
     'JOIN',
     'Prefetch',
     'SQL',
+    'fn',
     'prefetch_related',
     'get_related',
     'set_related',

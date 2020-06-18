@@ -1,4 +1,5 @@
-from typing import Iterable, Union
+from enum import Enum
+from typing import Iterable, Union, Optional
 from uuid import UUID, uuid4
 
 from pydantic import Field, constr
@@ -23,6 +24,20 @@ class Model(Schema):
     title: constr(max_length=SHORT_STRING_LEN)
     content: str = Field('', max_length=LONG_STRING_LEN)
     meta: ModelMeta = {}
+
+
+class Constrained(Schema):
+    class Kind(str, Enum):
+        FIRST = 'first'
+        SECOND = 'other'
+        LONGEST = '0000000000'
+        NUM = 42
+        COMPLEX = {}
+
+    title: constr(max_length=SHORT_STRING_LEN)
+    content: str = Field('', max_length=LONG_STRING_LEN)
+    kind: Kind = Kind.FIRST
+    opt: Optional[constr(max_length=LONG_STRING_LEN)]
 
 
 class ModelWithFieldsConf(Model):
@@ -79,10 +94,15 @@ class TestSchemaFields:
             'content': set(),
         }
 
-    def test_fields_allowed_max_length(self):
-        assert Model.get_field_max_length('title') == SHORT_STRING_LEN
-        assert Model.get_field_max_length('content') == LONG_STRING_LEN
-        assert Model.get_field_max_length('non_existing') is None
+    @mark.parametrize('field_name,length', [
+        ('title', SHORT_STRING_LEN),
+        ('content', LONG_STRING_LEN),
+        ('non_existing', None),
+        ('kind', len(Constrained.Kind.LONGEST.value)),
+        ('opt', LONG_STRING_LEN),
+    ], ids=['constr', 'field_instance', 'non_existing', 'enum', 'optional'])
+    def test_fields_allowed_max_length(self, field_name, length):
+        assert Constrained.get_field_max_length(field_name) == length
 
 
 @mark.parametrize('component_name', [42, 'kebab-cased-name', 'illegal chars*', 'кулебяка', ''])
