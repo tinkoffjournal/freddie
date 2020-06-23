@@ -25,6 +25,7 @@ from ..db.models import (
 from ..db.queries import (
     JOIN,
     Expression,
+    Function,
     Prefetch,
     Query,
     get_related,
@@ -50,6 +51,7 @@ M2M_FIELD_POSTFIX = '_ids'
 ModelPK = Any
 ModelData = Dict[str, Any]
 ModelRelations = Iterable[Tuple[ManyToManyField, set]]
+ExtraFields = Dict[str, Union[DBField, Function]]
 
 
 class GenericModelViewSet(GenericViewSet):
@@ -122,7 +124,10 @@ class GenericModelViewSet(GenericViewSet):
         )
         return query.where(*filter_expressions) if filter_expressions else query
 
-    def get_base_query(self, fields: ResponseFieldsDict) -> Query:
+    def construct_query(
+        self, fields: ResponseFieldsDict = None, extra: ExtraFields = None
+    ) -> Query:
+        fields = fields if fields is not None else self._response_fields_default_config
         selected = set()
         joined = set()
         model_fields = {field_name: self._model_fields.get(field_name) for field_name in fields}
@@ -153,6 +158,10 @@ class GenericModelViewSet(GenericViewSet):
             else:
                 selected.add(db_field)
 
+        for alias, field in (extra or {}).items():
+            if isinstance(field, (DBField, Function)):
+                selected.add(field.alias(alias))
+
         query = self.model.select(*(selected or (self.pk_field,)))
         for joined_model in joined:
             query = query.join_from(self.model, joined_model, JOIN.LEFT_OUTER)
@@ -171,7 +180,7 @@ class GenericModelViewSet(GenericViewSet):
                 )
 
     async def get_object_or_404(self, pk: Any, fields: ResponseFieldsDict = None) -> Model:
-        query = self.get_base_query(fields or {})
+        query = self.construct_query(fields)
         query = self.apply_query_filters(query).where(self.lookup_expr(pk))
         try:
             obj = await self.model.manager.get(query)
@@ -213,7 +222,7 @@ class GenericModelViewSet(GenericViewSet):
 
 class ModelRetrieveViewset(GenericModelViewSet, RetrieveViewset):
     async def retrieve(self, pk: Any, *, request: Request, **params: Any) -> Model:
-        fields = params.get(FIELDS_PARAM_NAME) or self.schema.get_default_response_fields_config()
+        fields = params.get(FIELDS_PARAM_NAME) or self._response_fields_default_config
         return await self.get_object_or_404(pk, fields=fields)
 
 
@@ -221,19 +230,23 @@ class ModelListViewset(GenericModelViewSet, ListViewset):
     async def list(
         self, *, request: Request, **params: Any,
     ) -> Union[Iterable[Model], AsyncIterable[Model]]:
-        fields = params.get(FIELDS_PARAM_NAME) or self.schema.get_default_response_fields_config()
-        query = self.get_base_query(fields)
+        fields = params.get(FIELDS_PARAM_NAME) or self._response_fields_default_config
+        query = self.construct_query(fields)
+        query = self.apply_dependencies_params(query, **params)
+        objects = await self.model.manager.execute(query)
+        prefetched_config = list(self.build_prefetch_config(fields))
+        if prefetched_config:
+            return prefetch_related(objects, prefetched_config)
+        return (obj for obj in objects)
+
+    def apply_dependencies_params(self, query: Query, **params: Any) -> Query:
         filter_by: Optional[FilterBy] = params.get(FilterBy.PARAM_NAME)
         if filter_by:
             query = self.apply_query_filters(query, request_filter_params=filter_by)
         paginator: Optional[Paginator] = params.get(Paginator.PARAM_NAME)
         if paginator:
             query = self.paginate_query(query, paginator)
-        objects = await self.model.manager.execute(query)
-        prefetched_config = list(self.build_prefetch_config(fields))
-        if prefetched_config:
-            return prefetch_related(objects, prefetched_config)
-        return (obj for obj in objects)
+        return query
 
     def paginate_query(self, query: Query, paginator: Paginator) -> Query:
         if paginator.limit:

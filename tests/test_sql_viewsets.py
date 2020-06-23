@@ -167,6 +167,12 @@ class TestRequestFields(ModelViewSetMixin):
                     for i in subitem:
                         assert subfield in i
 
+    async def test_extra_fn(self):
+        batch_size = 3
+        PostFactory.create_batch(size=batch_size)
+        response = await self.client.get(f'/post/extra')
+        assert response.json() == batch_size
+
 
 class TestSignals(ModelViewSetMixin):
     async def test_signal_on_create(self):

@@ -2,7 +2,7 @@ from collections import defaultdict
 from operator import attrgetter
 from typing import Any, AsyncIterator, DefaultDict, Dict, Iterable, NamedTuple, Tuple
 
-from peewee import JOIN, SQL, Check, Expression, Query, fn
+from peewee import JOIN, SQL, Check, Expression, Function, Query, fn
 
 from .fields import ManyToManyField
 from .models import Model
@@ -82,6 +82,7 @@ __all__ = (
     'Prefetch',
     'SQL',
     'fn',
+    'Function',
     'prefetch_related',
     'get_related',
     'set_related',

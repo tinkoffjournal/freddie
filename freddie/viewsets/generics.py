@@ -30,6 +30,7 @@ class GenericViewSet(APIRouter, ABC):
     _component_name_plural: str
     _pk_type_choices: Tuple[Type, ...]
     _openapi_tags: List[str]
+    _response_fields_default_config: ResponseFieldsDict
     _response_fields_full_config: ResponseFieldsDict
     _signals_dispatcher_type: Type[SignalDispatcher]
     validate_response: bool
@@ -55,6 +56,7 @@ class GenericViewSet(APIRouter, ABC):
             ..., title=f'{self._component_name.title()} lookup field', description='Lookup value',
         )
         self._openapi_tags = self.get_openapi_tags()
+        self._response_fields_default_config = self.schema.get_default_response_fields_config()
         self._response_fields_full_config = self.schema.get_full_response_fields_config()
         self._signals_dispatcher_type = SignalDispatcher.setup(get_signals_map(self))
         super().__init__(*args, **kwargs)
