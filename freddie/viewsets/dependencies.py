@@ -106,7 +106,7 @@ class FilterBy:
     def setup(cls, dependency_class: Type) -> Type['FilterBy']:
         if dependency_class is cls:
             return cls  # pragma: no cover
-        data_cls = dataclass(dependency_class, config=cls.ModelConfig, frozen=True)
+        data_cls = dataclass(dependency_class, config=cls.ModelConfig)
         cls.fields = data_cls.__pydantic_model__.__fields__  # type: ignore
         return type(cls.__name__, (cls, data_cls), {})  # type: ignore
 
