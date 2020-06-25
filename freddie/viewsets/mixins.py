@@ -1,7 +1,7 @@
-from typing import Type
+from typing import Any, Type
 
 from ..schemas import SchemaClass
-from .dependencies import FilterBy, Paginator, ResponseFields
+from .dependencies import FILTERABLE_VIEWSET_FLAG, FilterBy, Paginator, ResponseFields
 from .generics import Dependency, PredefinedDependencies
 
 
@@ -42,6 +42,10 @@ class PaginatedListViewset:
 
 class FilterableListViewset:
     Filter: Type = FilterBy
+
+    def __init_subclass__(cls, **kwargs: Any):
+        super().__init_subclass__()
+        setattr(cls, FILTERABLE_VIEWSET_FLAG, True)
 
     def get_list_dependencies(self) -> PredefinedDependencies:
         filter_by = FilterBy.PARAM_NAME, FilterBy.setup(self.Filter)

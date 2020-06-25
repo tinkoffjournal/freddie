@@ -115,3 +115,6 @@ class FilterBy:
             value = getattr(self, key, None)
             if value is not None:
                 yield key, value
+
+
+FILTERABLE_VIEWSET_FLAG = '_IS_FILTERABLE'

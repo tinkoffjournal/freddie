@@ -35,7 +35,7 @@ from ..db.queries import (
 from ..exceptions import NotFound, ServerError, Unprocessable, db_errors_handler
 from ..helpers import init_sql_logger, is_iterable
 from ..schemas import Schema
-from .dependencies import FilterBy, Paginator, ResponseFieldsDict
+from .dependencies import FILTERABLE_VIEWSET_FLAG, FilterBy, Paginator, ResponseFieldsDict
 from .generics import (
     FIELDS_PARAM_NAME,
     CreateViewset,
@@ -60,6 +60,7 @@ class GenericModelViewSet(GenericViewSet):
     secondary_lookup_field: Optional[DBField] = None
     _model_fields: FieldsMap
     _model_props_dependencies: PropsDependenciesMap
+    _is_filterable_by_query_params: bool = False
     _VALIDATE_SCHEMA_CONSTR: bool = False
 
     def __init__(
@@ -74,6 +75,7 @@ class GenericModelViewSet(GenericViewSet):
         self._model_props_dependencies = self.model.map_props_dependencies()
         if self.validate_response:
             self.schema.__config__.orm_mode = True
+        self._is_filterable_by_query_params = hasattr(self, FILTERABLE_VIEWSET_FLAG)
         if sql_debug:
             init_sql_logger()
 
@@ -111,18 +113,14 @@ class GenericModelViewSet(GenericViewSet):
             return self.secondary_lookup_field == pk
         return self.pk_field == pk
 
-    def get_query_filters(self, request_filter_params: FilterBy = None) -> Iterator[Expression]:
-        if request_filter_params is not None:
-            for field_name, value in request_filter_params.items():
+    def apply_query_filters(self, query: Query, **params: Any) -> Query:
+        if self._is_filterable_by_query_params:
+            filter_params = params.get(FilterBy.PARAM_NAME, {})
+            for field_name, filter_value in filter_params.items():
                 model_field = self._model_fields.get(field_name)
                 if model_field:
-                    yield model_field == value
-
-    def apply_query_filters(self, query: Query, request_filter_params: FilterBy = None) -> Query:
-        filter_expressions = tuple(
-            self.get_query_filters(request_filter_params=request_filter_params)
-        )
-        return query.where(*filter_expressions) if filter_expressions else query
+                    query = query.where(model_field == filter_value)
+        return query
 
     def construct_query(
         self, fields: ResponseFieldsDict = None, extra: ExtraFields = None
@@ -242,7 +240,7 @@ class ModelListViewset(GenericModelViewSet, ListViewset):
     def apply_dependencies_params(self, query: Query, **params: Any) -> Query:
         filter_by: Optional[FilterBy] = params.get(FilterBy.PARAM_NAME)
         if filter_by:
-            query = self.apply_query_filters(query, request_filter_params=filter_by)
+            query = self.apply_query_filters(query, **params)
         paginator: Optional[Paginator] = params.get(Paginator.PARAM_NAME)
         if paginator:
             query = self.paginate_query(query, paginator)
@@ -310,7 +308,7 @@ class ModelUpdateViewset(GenericModelViewSet, UpdateViewset):
 
     async def perform_update(self, pk: ModelPK, data: ModelData, **params: Any) -> Any:
         query = self.model.update(**data)
-        query = self.apply_query_filters(query).where(self.lookup_expr(pk))
+        query = self.apply_query_filters(query, **params).where(self.lookup_expr(pk))
         return await self.model.manager.execute(query)
 
 
@@ -322,7 +320,7 @@ class ModelDestroyViewset(GenericModelViewSet, DestroyViewset):
 
     async def perform_destroy(self, pk: ModelPK, **params: Any) -> Any:
         query = self.model.delete()
-        query = self.apply_query_filters(query).where(self.lookup_expr(pk))
+        query = self.apply_query_filters(query, **params).where(self.lookup_expr(pk))
         return await self.model.manager.execute(query)
 
 
