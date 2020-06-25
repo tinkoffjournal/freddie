@@ -8,13 +8,17 @@ from .generics import Dependency, PredefinedDependencies
 class FieldedViewsetMixin:
     schema: SchemaClass
 
+    @staticmethod
+    def setup_response_fields(schema: SchemaClass) -> Type[ResponseFields]:
+        return ResponseFields.setup(
+            allowed=schema.get_readable_fields(),
+            defaults=schema.get_default_response_fields_config(),
+        )
+
     def _get_dependency(self) -> Dependency:
         return (
             ResponseFields.PARAM_NAME,
-            ResponseFields.setup(
-                allowed=self.schema.get_readable_fields(),
-                defaults=self.schema.get_default_response_fields_config(),
-            ),
+            self.setup_response_fields(self.schema),
         )
 
 
