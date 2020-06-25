@@ -130,6 +130,9 @@ class GenericViewSet(APIRouter, ABC):
     async def get_object_or_404(self, pk: Any, fields: ResponseFieldsDict = None) -> Any:
         ...
 
+    async def validate_request_body(self, body: Schema, obj: Any = None) -> None:
+        ...
+
 
 def _get_pk_type_choices(pk_type: Type) -> Iterable[Type]:
     for type_ in extract_types(pk_type):
@@ -223,6 +226,7 @@ class CreateViewset(GenericViewSet):
             signals: signals_dispatcher = Depends(),  # type: ignore
             **params: Any,
         ) -> Any:
+            await self.validate_request_body(body)
             obj = await self.perform_api_action(self.create, body, request=request, **params)
             signals.send(Signal.POST_SAVE, obj, created=True)  # type: ignore
             return await self.response(obj, status_code, fields=self._response_fields_full_config)
@@ -272,6 +276,7 @@ class UpdateViewset(GenericViewSet):
             **params: Any,
         ) -> Any:
             obj = await self.get_object_or_404(pk, fields=self._response_fields_full_config)
+            await self.validate_request_body(body, obj)
             pk = getattr(obj, 'pk', pk)
             updated_obj = await self.perform_api_action(
                 self.update, pk, body, partial=False, request=request, **params
@@ -289,6 +294,7 @@ class UpdateViewset(GenericViewSet):
             signals: signals_dispatcher = Depends(),  # type: ignore
         ) -> Any:
             obj = await self.get_object_or_404(pk, fields=self._response_fields_full_config)
+            await self.validate_request_body(body, obj)
             pk = getattr(obj, 'pk', pk)
             updated_obj = await self.perform_api_action(
                 self.update, pk, body, partial=True, request=request
