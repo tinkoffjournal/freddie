@@ -106,7 +106,7 @@ class PostViewSet(
     async def meta(self):
         return post.metadata
 
-    # Add custom handler on /{pk}/meta path
+    # Add custom handler on /{pk}/retrieve_meta path
     @route(detail=True, summary='Retrieve post metadata')
     async def retrieve_meta(self, pk: int):
         return {pk: post.metadata}
