@@ -260,6 +260,17 @@ class TestManyToManyModelViewSet(ModelViewSetMixin):
         assert len(list(PostTags.select().where(PostTags.post == post.id))) == 0
 
 
+class TestOrderedModelViewSet(ModelViewSetMixin):
+    async def test_model_ordering(self):
+        PostFactory.create(slug='ccc')
+        PostFactory.create(slug='aaa')
+        PostFactory.create(slug='bbb')
+        response = await self.client.get('/post-ordered/')
+        response_data = response.json()
+        get_post_slug = lambda post: post.get('slug')
+        assert list(map(get_post_slug, response_data)) == ['aaa', 'bbb', 'ccc']
+
+
 @mark.parametrize(
     'selected,expected',
     [

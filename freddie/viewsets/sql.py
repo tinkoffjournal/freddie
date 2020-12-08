@@ -58,18 +58,25 @@ class GenericModelViewSet(GenericViewSet):
     model: Type[Model] = Model
     pk_field: DBField
     secondary_lookup_field: Optional[DBField] = None
+    model_ordering: Tuple[DBField] = ()
     _model_fields: FieldsMap
     _model_props_dependencies: PropsDependenciesMap
     _is_filterable_by_query_params: bool = False
     _VALIDATE_SCHEMA_CONSTR: bool = False
 
     def __init__(
-        self, *args: Any, model: Type[Model] = None, sql_debug: bool = False, **kwargs: Any
+        self,
+        *args: Any,
+        model: Type[Model] = None,
+        model_ordering: Tuple[DBField] = (),
+        sql_debug: bool = False,
+        **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)
         self.model = self.validate_model(model or self.model)
         self.pk_field = self.model.pk_field()
         self._model_fields = self.model.fields()
+        self.model_ordering = model_ordering
         if self._VALIDATE_SCHEMA_CONSTR:
             self.validate_schema_constraints()
         self._model_props_dependencies = self.model.map_props_dependencies()
@@ -161,6 +168,8 @@ class GenericModelViewSet(GenericViewSet):
                 selected.add(field.alias(alias))
 
         query = self.model.select(*(selected or (self.pk_field,)))
+        if self.model_ordering:
+            query = query.order_by(*self.model_ordering)
         for joined_model in joined:
             query = query.join_from(self.model, joined_model, JOIN.LEFT_OUTER)
         return query

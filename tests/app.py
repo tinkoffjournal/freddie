@@ -318,6 +318,10 @@ app.include_router(
     prefix='/post-validated',
 )
 app.include_router(
+    ModelViewSet(model=Post, schema=PostSchemaSimple, model_ordering=(Post.slug,)),
+    prefix='/post-ordered',
+)
+app.include_router(
     ListCreateModelViewSet(model=Post, schema=PostSchema.optional()), prefix='/post-create'
 )
 
