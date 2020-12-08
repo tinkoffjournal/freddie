@@ -76,7 +76,8 @@ class GenericModelViewSet(GenericViewSet):
         self.model = self.validate_model(model or self.model)
         self.pk_field = self.model.pk_field()
         self._model_fields = self.model.fields()
-        self.model_ordering = model_ordering
+        if model_ordering:
+            self.model_ordering = model_ordering
         if self._VALIDATE_SCHEMA_CONSTR:
             self.validate_schema_constraints()
         self._model_props_dependencies = self.model.map_props_dependencies()
