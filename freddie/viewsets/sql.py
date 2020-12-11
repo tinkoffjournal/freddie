@@ -11,6 +11,7 @@ from typing import (
     Union,
 )
 
+from peewee import Ordering
 from starlette.requests import Request
 
 from ..db.models import (
@@ -58,7 +59,7 @@ class GenericModelViewSet(GenericViewSet):
     model: Type[Model] = Model
     pk_field: DBField
     secondary_lookup_field: Optional[DBField] = None
-    model_ordering: Tuple[DBField] = ()
+    model_ordering: Tuple[Union[DBField, Ordering], ...] = ()
     _model_fields: FieldsMap
     _model_props_dependencies: PropsDependenciesMap
     _is_filterable_by_query_params: bool = False
@@ -68,7 +69,7 @@ class GenericModelViewSet(GenericViewSet):
         self,
         *args: Any,
         model: Type[Model] = None,
-        model_ordering: Tuple[DBField] = (),
+        model_ordering: Tuple[Union[DBField, Ordering], ...] = (),
         sql_debug: bool = False,
         **kwargs: Any,
     ):
@@ -184,7 +185,9 @@ class GenericModelViewSet(GenericViewSet):
             field = self.model.manytomany.get(field_name)
             if field:
                 yield Prefetch(
-                    field=field, attr_name=attr_name, ids_only=ids_only,
+                    field=field,
+                    attr_name=attr_name,
+                    ids_only=ids_only,
                 )
 
     async def get_object_or_404(self, pk: Any, fields: ResponseFieldsDict = None) -> Model:
@@ -208,7 +211,10 @@ class GenericModelViewSet(GenericViewSet):
         related = []
         excluded_keys = self.schema.get_read_only_fields() | {self.pk_field.name}
         serialized = body.dict(
-            exclude=excluded_keys, exclude_unset=not on_create, exclude_none=True, by_alias=True,
+            exclude=excluded_keys,
+            exclude_unset=not on_create,
+            exclude_none=True,
+            by_alias=True,
         )
         for key, value in serialized.items():
             if key not in self._model_fields:
@@ -236,7 +242,10 @@ class ModelRetrieveViewset(GenericModelViewSet, RetrieveViewset):
 
 class ModelListViewset(GenericModelViewSet, ListViewset):
     async def list(
-        self, *, request: Request, **params: Any,
+        self,
+        *,
+        request: Request,
+        **params: Any,
     ) -> Union[Iterable[Model], AsyncIterable[Model]]:
         fields = params.get(FIELDS_PARAM_NAME) or self._response_fields_default_config
         query = self.construct_query(fields)
