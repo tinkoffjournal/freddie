@@ -18,7 +18,8 @@ def get_properties_dependencies(
     model_class: Type[DBModel],
 ) -> Iterator[Tuple[str, Tuple[DBField, ...]]]:
     for name, method in getmembers(
-        model_class, lambda member: (isinstance(member, (property, Callable))),  # type: ignore
+        model_class,
+        lambda member: (isinstance(member, (property, Callable))),  # type: ignore
     ):
         # Get getter if property or method itself
         method_fn = getattr(method, 'fget', method)

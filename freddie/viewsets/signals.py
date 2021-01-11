@@ -62,7 +62,11 @@ class SignalDispatcher:
         return type(cls.__name__, (cls,), {'mapping': mapping})
 
     def send(
-        self, signal_type: Signal, obj: Any, obj_before_update: Any = None, **kwargs: Any,
+        self,
+        signal_type: Signal,
+        obj: Any,
+        obj_before_update: Any = None,
+        **kwargs: Any,
     ) -> None:
         for handler in self.mapping[signal_type]:
             self.bg_tasks.add_task(handler, obj, obj_before_update=obj_before_update, **kwargs)

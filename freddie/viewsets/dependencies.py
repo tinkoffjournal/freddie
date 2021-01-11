@@ -20,7 +20,10 @@ class Paginator:
     PARAM_NAME: str = 'paginator'
 
     _limit_query = Query(
-        default=default_limit, ge=1, le=max_limit, description='Maximum number of items to list',
+        default=default_limit,
+        ge=1,
+        le=max_limit,
+        description='Maximum number of items to list',
     )
     _offset_query = Query(
         default=default_offset, ge=0, le=max_offset, description='Items list offset'
@@ -34,7 +37,9 @@ class Paginator:
         cls._offset_query.le = cls.max_offset
 
     def __init__(
-        self, limit: int = _limit_query, offset: int = _offset_query,
+        self,
+        limit: int = _limit_query,
+        offset: int = _offset_query,
     ):
         self.limit = limit
         self.offset = offset
@@ -107,8 +112,8 @@ class FilterBy:
         if dependency_class is cls:
             return cls  # pragma: no cover
         data_cls = dataclass(dependency_class, config=cls.ModelConfig)
-        cls.fields = data_cls.__pydantic_model__.__fields__  # type: ignore
-        return type(cls.__name__, (cls, data_cls), {})  # type: ignore
+        cls.fields = data_cls.__pydantic_model__.__fields__
+        return type(cls.__name__, (cls, data_cls), {})
 
     def items(self) -> Iterator[Tuple[str, Any]]:
         for key in self.fields.keys():

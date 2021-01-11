@@ -75,7 +75,9 @@ class QueryBuilder:
         self.field = field
 
     def get(
-        self, fields: Iterable[DBField] = None, conditions: Iterable[Expression] = None,
+        self,
+        fields: Iterable[DBField] = None,
+        conditions: Iterable[Expression] = None,
     ) -> Query:
         related_objects_pks = self.field.through_model.select(self.field.rel_model_fk).where(
             self.field.model_fk == self.pk

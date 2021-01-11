@@ -2,14 +2,14 @@
 DIR = freddie
 
 fmt:
-	isort --recursive $(DIR)
+	isort $(DIR)
 	black $(DIR)
 
 type:
 	mypy $(DIR)
 
 lint:
-	isort --recursive --check-only --diff $(DIR)
+	isort --check-only --diff $(DIR)
 	black --check $(DIR)
 	flake8 $(DIR)
 

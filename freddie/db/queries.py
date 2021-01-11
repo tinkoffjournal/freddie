@@ -15,7 +15,9 @@ class Prefetch(NamedTuple):
 
 
 async def prefetch_related(
-    objects: Iterable[Model], config: Iterable[Prefetch], as_objects: bool = True,
+    objects: Iterable[Model],
+    config: Iterable[Prefetch],
+    as_objects: bool = True,
 ) -> AsyncIterator[Model]:
     ids = set(map(attrgetter('id'), objects))
     prefetched_data: Dict[str, DefaultDict] = {}

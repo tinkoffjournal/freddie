@@ -161,7 +161,11 @@ class Schema(BaseModel):
 
     @classmethod
     async def _getattr(
-        cls, obj: Any, name: str, default: Any = None, is_mapping: bool = False,
+        cls,
+        obj: Any,
+        name: str,
+        default: Any = None,
+        is_mapping: bool = False,
     ) -> Any:
         if is_mapping:
             value = obj.get(name, None)

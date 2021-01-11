@@ -75,7 +75,9 @@ _POS_PARAM_KINDS = {Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD}
 
 
 def patch_endpoint_signature(
-    endpoint: Callable, handler: Callable = None, dependencies: Iterable[Tuple[str, Type]] = None,
+    endpoint: Callable,
+    handler: Callable = None,
+    dependencies: Iterable[Tuple[str, Type]] = None,
 ) -> Callable:
     signature = get_signature(endpoint)
     parameters = chain(

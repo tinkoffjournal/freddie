@@ -53,7 +53,9 @@ class GenericViewSet(APIRouter, ABC):
         self.pk_type = pk_type or self.pk_type
         self._pk_type_choices = tuple(_get_pk_type_choices(self.pk_type))
         self.pk_parameter = pk_parameter or Path(
-            ..., title=f'{self._component_name.title()} lookup field', description='Lookup value',
+            ...,
+            title=f'{self._component_name.title()} lookup field',
+            description='Lookup value',
         )
         self._openapi_tags = self.get_openapi_tags()
         self._response_fields_default_config = self.schema.get_default_response_fields_config()
