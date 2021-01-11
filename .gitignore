@@ -7,4 +7,5 @@ venv/
 coverage.xml
 htmlcov
 .ipython
+.idea
 *.pyc
