@@ -52,6 +52,7 @@ M2M_FIELD_POSTFIX = '_ids'
 ModelPK = Any
 ModelData = Dict[str, Any]
 ModelRelations = Iterable[Tuple[ManyToManyField, set]]
+ModelOrdering = Tuple[Union[DBField, Ordering], ...]
 ExtraFields = Dict[str, Union[DBField, Function]]
 
 
@@ -59,7 +60,7 @@ class GenericModelViewSet(GenericViewSet):
     model: Type[Model] = Model
     pk_field: DBField
     secondary_lookup_field: Optional[DBField] = None
-    model_ordering: Tuple[Union[DBField, Ordering], ...] = ()
+    model_ordering: ModelOrdering = ()
     _model_fields: FieldsMap
     _model_props_dependencies: PropsDependenciesMap
     _is_filterable_by_query_params: bool = False
@@ -69,7 +70,7 @@ class GenericModelViewSet(GenericViewSet):
         self,
         *args: Any,
         model: Type[Model] = None,
-        model_ordering: Tuple[Union[DBField, Ordering], ...] = (),
+        model_ordering: ModelOrdering = (),
         sql_debug: bool = False,
         **kwargs: Any,
     ):
@@ -134,10 +135,30 @@ class GenericModelViewSet(GenericViewSet):
     def construct_query(
         self, request: Request, fields: ResponseFieldsDict = None, extra: ExtraFields = None
     ) -> Query:
-        fields = fields if fields is not None else self._response_fields_default_config
+        selected, joined = self.get_selected_and_joined(request, fields, extra)
+        ordering = self.get_ordering(request, fields, extra)
+        query = self.get_initial_query(request, fields, extra)
+
+        query = self.select_query(request, query, selected=selected)
+        query = self.join_query(request, query, joined=joined)
+        query = self.order_query(request, query, ordering=ordering)
+
+        return query
+
+    def get_initial_query(
+        self, request: Request, fields: ResponseFieldsDict, extra: ExtraFields
+    ) -> Query:
+        return self.model.select()
+
+    def get_selected_and_joined(
+        self, request: Request, fields: ResponseFieldsDict, extra: ExtraFields
+    ) -> Tuple[set, set]:
         selected = set()
         joined = set()
+
+        fields = fields if fields is not None else self._response_fields_default_config
         model_fields = {field_name: self._model_fields.get(field_name) for field_name in fields}
+
         for field_name, db_field in model_fields.items():
             # Foreign key ID
             if db_field is None and field_name.endswith(FK_FIELD_POSTFIX):
@@ -169,12 +190,24 @@ class GenericModelViewSet(GenericViewSet):
             if isinstance(field, (DBField, Function)):
                 selected.add(field.alias(alias))
 
-        query = self.model.select(*(selected or (self.pk_field,)))
-        if self.model_ordering:
-            query = query.order_by(*self.model_ordering)
+        return (selected, joined)
+
+    def get_ordering(
+        self, request: Request, fields: ResponseFieldsDict, extra: ExtraFields
+    ) -> ModelOrdering:
+        return self.model_ordering
+
+    def select_query(self, request: Request, query: Query, selected: set) -> Query:
+        return query.select(*(selected or (self.pk_field,)))
+
+    def join_query(self, request: Request, query: Query, joined: set) -> Query:
         for joined_model in joined:
             query = query.join_from(self.model, joined_model, JOIN.LEFT_OUTER)
+
         return query
+
+    def order_query(self, request: Request, query: Query, ordering: ModelOrdering) -> Query:
+        return query.order_by(*ordering) if ordering else query
 
     def build_prefetch_config(self, fields: ResponseFieldsDict) -> Iterator[Prefetch]:
         for field_name in fields:
