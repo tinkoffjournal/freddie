@@ -296,7 +296,9 @@ class TestDatabaseViewSet(
 
     @route(detail=False, include_in_schema=False)
     async def extra(self):
-        query = self.construct_query(fields={}, extra={'total': fn.Count(self.model.id)})
+        query = self.construct_query(
+            request={}, fields={}, extra={'total': fn.Count(self.model.id)}
+        )
         return await self.model.manager.scalar(query)
 
     class Paginator:

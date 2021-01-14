@@ -132,7 +132,7 @@ class GenericModelViewSet(GenericViewSet):
         return query
 
     def construct_query(
-        self, fields: ResponseFieldsDict = None, extra: ExtraFields = None
+        self, request: Request, fields: ResponseFieldsDict = None, extra: ExtraFields = None
     ) -> Query:
         fields = fields if fields is not None else self._response_fields_default_config
         selected = set()
@@ -190,8 +190,10 @@ class GenericModelViewSet(GenericViewSet):
                     ids_only=ids_only,
                 )
 
-    async def get_object_or_404(self, pk: Any, fields: ResponseFieldsDict = None) -> Model:
-        query = self.construct_query(fields)
+    async def get_object_or_404(
+        self, pk: Any, request: Request, fields: ResponseFieldsDict = None
+    ) -> Model:
+        query = self.construct_query(request, fields)
         query = self.apply_query_filters(query).where(self.lookup_expr(pk))
         try:
             obj = await self.model.manager.get(query)
@@ -237,7 +239,7 @@ class GenericModelViewSet(GenericViewSet):
 class ModelRetrieveViewset(GenericModelViewSet, RetrieveViewset):
     async def retrieve(self, pk: Any, *, request: Request, **params: Any) -> Model:
         fields = params.get(FIELDS_PARAM_NAME) or self._response_fields_default_config
-        return await self.get_object_or_404(pk, fields=fields)
+        return await self.get_object_or_404(pk, request=request, fields=fields)
 
 
 class ModelListViewset(GenericModelViewSet, ListViewset):
@@ -248,7 +250,7 @@ class ModelListViewset(GenericModelViewSet, ListViewset):
         **params: Any,
     ) -> Union[Iterable[Model], AsyncIterable[Model]]:
         fields = params.get(FIELDS_PARAM_NAME) or self._response_fields_default_config
-        query = self.construct_query(fields)
+        query = self.construct_query(request, fields)
         query = self.apply_dependencies_params(query, **params)
         objects = await self.model.manager.execute(query)
         prefetched_config = list(self.build_prefetch_config(fields))
@@ -276,11 +278,15 @@ class ModelListViewset(GenericModelViewSet, ListViewset):
 class ModelCreateViewset(GenericModelViewSet, CreateViewset):
     _VALIDATE_SCHEMA_CONSTR = True
 
-    async def perform_api_action(self, handler: Callable, *args: Any, **kwargs: Any) -> Any:
+    async def perform_api_action(
+        self, handler: Callable, *args: Any, request: Request, **kwargs: Any
+    ) -> Any:
         if handler == self.create:
-            pk = await super().perform_api_action(handler, *args, **kwargs)
-            return await self.get_object_or_404(pk, fields=self._response_fields_full_config)
-        return await super().perform_api_action(handler, *args, **kwargs)
+            pk = await super().perform_api_action(handler, *args, request=request, **kwargs)
+            return await self.get_object_or_404(
+                pk, request=request, fields=self._response_fields_full_config
+            )
+        return await super().perform_api_action(handler, *args, request=request, **kwargs)
 
     async def create(self, body: Schema, *, request: Request, **params: Any) -> ModelPK:
         data, related = self.serialize_request_body_for_db(body, on_create=True)
@@ -305,11 +311,15 @@ class ModelCreateViewset(GenericModelViewSet, CreateViewset):
 class ModelUpdateViewset(GenericModelViewSet, UpdateViewset):
     _VALIDATE_SCHEMA_CONSTR = True
 
-    async def perform_api_action(self, handler: Callable, *args: Any, **kwargs: Any) -> Any:
+    async def perform_api_action(
+        self, handler: Callable, *args: Any, request: Request, **kwargs: Any
+    ) -> Any:
         if handler == self.update:
-            pk = await super().perform_api_action(handler, *args, **kwargs)
-            return await self.get_object_or_404(pk, fields=self._response_fields_full_config)
-        return await super().perform_api_action(handler, *args, **kwargs)
+            pk = await super().perform_api_action(handler, *args, request=request, **kwargs)
+            return await self.get_object_or_404(
+                pk, request=request, fields=self._response_fields_full_config
+            )
+        return await super().perform_api_action(handler, *args, request=request, **kwargs)
 
     async def update(
         self, pk: ModelPK, body: Schema, *, request: Request, **params: Any
