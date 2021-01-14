@@ -129,7 +129,9 @@ class GenericViewSet(APIRouter, ABC):
     def api_actions(self) -> None:
         ...
 
-    async def get_object_or_404(self, pk: Any, fields: ResponseFieldsDict = None) -> Any:
+    async def get_object_or_404(
+        self, pk: Any, request: Request, fields: ResponseFieldsDict = None
+    ) -> Any:
         ...
 
     async def validate_request_body(self, body: Schema, obj: Any = None) -> None:
@@ -277,7 +279,9 @@ class UpdateViewset(GenericViewSet):
             signals: signals_dispatcher = Depends(),  # type: ignore
             **params: Any,
         ) -> Any:
-            obj = await self.get_object_or_404(pk, fields=self._response_fields_full_config)
+            obj = await self.get_object_or_404(
+                pk, request=request, fields=self._response_fields_full_config
+            )
             await self.validate_request_body(body, obj)
             pk = getattr(obj, 'pk', pk)
             updated_obj = await self.perform_api_action(
@@ -295,7 +299,9 @@ class UpdateViewset(GenericViewSet):
             request: Request,
             signals: signals_dispatcher = Depends(),  # type: ignore
         ) -> Any:
-            obj = await self.get_object_or_404(pk, fields=self._response_fields_full_config)
+            obj = await self.get_object_or_404(
+                pk, request=request, fields=self._response_fields_full_config
+            )
             await self.validate_request_body(body, obj)
             pk = getattr(obj, 'pk', pk)
             updated_obj = await self.perform_api_action(
@@ -353,7 +359,9 @@ class DestroyViewset(GenericViewSet):
             signals: signals_dispatcher = Depends(),  # type: ignore
             **params: Any,
         ) -> Response:
-            obj = await self.get_object_or_404(pk, fields=self._response_fields_full_config)
+            obj = await self.get_object_or_404(
+                pk, request=request, fields=self._response_fields_full_config
+            )
             await self.perform_api_action(self.destroy, pk, request=request, **params)
             signals.send(Signal.POST_DELETE, obj)  # type: ignore
             return Response('', status_code=int(HTTPStatus.NO_CONTENT))
