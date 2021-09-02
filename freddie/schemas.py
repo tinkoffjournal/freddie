@@ -41,7 +41,7 @@ class Schema(BaseModel):
             # Prevent class from recreation on each call,
             # otherwise OpenAPI schema generation is broken
             cls._cache[class_name] = model
-        return model  # type: ignore
+        return model
 
     @classmethod
     def get_config(cls) -> Type[SchemaConfig]:

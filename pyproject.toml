@@ -30,14 +30,14 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
 ]
 requires = [
-  "fastapi >=0.50.0,<0.62",
+  "fastapi >=0.62",
 ]
 description-file = "README.md"
 requires-python = ">=3.6"
 
 [tool.flit.metadata.requires-extra]
 db = [
-  "aiopg == 1.0.0",
+  "aiopg >= 1.0.0",
   "peewee-async == 0.7.0",
   "peewee == 3.13.3",
 ]

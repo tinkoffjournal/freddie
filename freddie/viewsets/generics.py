@@ -4,6 +4,7 @@ from typing import Any, AsyncIterable, Callable, Dict, Iterable, List, Optional,
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Path, Response
+from fastapi.datastructures import Default, DefaultPlaceholder
 from pydantic.fields import FieldInfo
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -18,6 +19,8 @@ VALID_PK_TYPES = {int, str, UUID}
 DEFAULT_PK_TYPE = int
 DETAIL_ROUTE_PATTERN = '/{pk}'
 FIELDS_PARAM_NAME = ResponseFields.PARAM_NAME
+
+_default_response_cls = Default(JSONResponse)
 
 
 class GenericViewSet(APIRouter, ABC):
@@ -63,7 +66,11 @@ class GenericViewSet(APIRouter, ABC):
         self._signals_dispatcher_type = SignalDispatcher.setup(get_signals_map(self))
         super().__init__(*args, **kwargs)
         self.validate_response = validate_response
-        self.default_response_class = self.default_response_class or JSONResponse
+        self.default_response_class = (
+            self.default_response_class
+            if not isinstance(self.default_response_class, DefaultPlaceholder)
+            else JSONResponse
+        )
         self.add_routes_from_class_declaration()
         self.api_actions()
 
@@ -163,7 +170,7 @@ class ListViewset(GenericViewSet):
             patch_endpoint_signature(endpoint, self.list, self.get_list_dependencies()),
             methods=['GET'],
             status_code=status_code,
-            response_class=None if self.validate_response else Response,
+            response_class=_default_response_cls if self.validate_response else Response,
             response_model=response_model if self.validate_response else None,
             response_description=f'{self._component_name_plural.title()} listed',
             responses={status_code: {'model': response_model}},
@@ -201,7 +208,7 @@ class RetrieveViewset(GenericViewSet):
             patch_endpoint_signature(endpoint, self.retrieve, self.get_retrieve_dependencies()),
             methods=['GET'],
             status_code=status_code,
-            response_class=None if self.validate_response else Response,
+            response_class=_default_response_cls if self.validate_response else Response,
             response_model=self.schema if self.validate_response else None,
             response_description=f'{self._component_name.title()} instance retrieved',
             responses={**self.notfound_response(), status_code: {'model': self.schema}},
@@ -240,7 +247,7 @@ class CreateViewset(GenericViewSet):
             patch_endpoint_signature(endpoint, self.create),
             methods=['POST'],
             status_code=status_code,
-            response_class=None if self.validate_response else Response,
+            response_class=_default_response_cls if self.validate_response else Response,
             response_model=self.schema if self.validate_response else None,
             response_description=f'{self._component_name.title()} instance created',
             responses={status_code: {'model': self.schema}},
@@ -317,7 +324,7 @@ class UpdateViewset(GenericViewSet):
             patch_endpoint_signature(update_endpoint, self.update),
             methods=['PUT'],
             status_code=status_code,
-            response_class=None if self.validate_response else Response,
+            response_class=_default_response_cls if self.validate_response else Response,
             response_model=self.schema if self.validate_response else None,
             response_description=f'{self._component_name.title()} instance fully updated',
             responses=responses,
@@ -330,7 +337,7 @@ class UpdateViewset(GenericViewSet):
             patch_endpoint_signature(update_partial_endpoint, self.update),
             methods=['PATCH'],
             status_code=status_code,
-            response_class=None if self.validate_response else Response,
+            response_class=_default_response_cls if self.validate_response else Response,
             response_model=self.schema if self.validate_response else None,
             response_description=f'{self._component_name.title()} instance updated',
             responses=responses,
