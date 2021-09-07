@@ -61,6 +61,11 @@ class ManyToManyField(MetaField):
     def rel_model_fk(self) -> ForeignKeyField:
         return getattr(self.through_model, self.rel_model_name)
 
+    @property
+    def property_deps(self) -> List[DBField]:
+        '''ManyToManyField depends on field referenced by relation to join tables'''
+        return [self.model_fk.rel_field]
+
 
 class QueryBuilder:
     pk: Any
