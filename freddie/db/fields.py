@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Type, Union
+from typing import Any, Iterable, List, Type, Union
 
 from peewee import (
     Expression,

@@ -10,7 +10,6 @@ from typing import (
     Tuple,
     Union,
 )
-from warnings import warn
 
 from peewee import (
     JOIN,
@@ -126,11 +125,11 @@ class ThroughModel(DBModel):
             for field_name, field in getmembers(
                 rel_model, lambda f: isinstance(f, ManyToManyField)
             ):
+                if field.through_model_name != cls.__name__:
+                    continue
                 field.through_model = cls
                 rel_model.manytomany[field_name] = field
                 related_fields_found += 1
-        if not related_fields_found:
-            warn(f'No many-to-many model fields assigned with {cls.__name__}')  # pragma: no cover
 
 
 FieldsMap = Dict[str, DBField]

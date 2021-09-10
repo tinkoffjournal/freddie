@@ -278,7 +278,7 @@ class ModelListViewset(GenericModelViewSet, ListViewset):
 class ModelCreateViewset(GenericModelViewSet, CreateViewset):
     _VALIDATE_SCHEMA_CONSTR = True
 
-    async def perform_api_action(
+    async def perform_api_action(  # type: ignore
         self, handler: Callable, *args: Any, request: Request, **kwargs: Any
     ) -> Any:
         if handler == self.create:
@@ -311,7 +311,7 @@ class ModelCreateViewset(GenericModelViewSet, CreateViewset):
 class ModelUpdateViewset(GenericModelViewSet, UpdateViewset):
     _VALIDATE_SCHEMA_CONSTR = True
 
-    async def perform_api_action(
+    async def perform_api_action(  # type: ignore
         self, handler: Callable, *args: Any, request: Request, **kwargs: Any
     ) -> Any:
         if handler == self.update:
