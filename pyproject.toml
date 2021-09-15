@@ -1,12 +1,14 @@
 [build-system]
-requires = ["flit_core >=2,<4"]
+requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
-[tool.flit.metadata]
-module = "freddie"
-author = "Arseny Gabdullin"
-author-email = "a.gabdullin@tinkoff.ru"
-home-page = "https://github.com/tinkoffjournal/freddie"
+[project]
+name = "Freddie"
+version = "0.9.2"
+description = "FastAPI tools library for building DRF-like viewsets"
+authors = [
+  {name = "Arseny Gabdullin", email = "a.gabdullin@tinkoff.ru"}
+]
 classifiers = [
   "Intended Audience :: Information Technology",
   "Intended Audience :: System Administrators",
@@ -29,13 +31,16 @@ classifiers = [
   "Topic :: Internet",
   "License :: OSI Approved :: MIT License",
 ]
-requires = [
+requires-python = ">=3.6"
+dependencies = [
   "fastapi >=0.62",
 ]
-description-file = "README.md"
-requires-python = ">=3.6"
+readme = "README.md"
 
-[tool.flit.metadata.requires-extra]
+[project.urls]
+Source = "https://github.com/tinkoffjournal/freddie"
+
+[project.optional-dependencies]
 db = [
   "aiopg >= 1.0.0",
   "peewee-async == 0.7.0",
@@ -57,6 +62,9 @@ test = [
 dev = [
   "uvicorn"
 ]
+
+[tool.flit.module]
+name = "freddie"
 
 [tool.black]
 target-version = ["py36"]
