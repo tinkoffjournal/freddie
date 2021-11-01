@@ -101,7 +101,7 @@ ResponseFieldsDict = Union[ResponseFields, dict]
 
 
 class FilterBy:
-    fields: Dict[str, ModelField] = {}
+    fields: Dict[str, ModelField]
     PARAM_NAME: str = 'filter_by'
 
     class ModelConfig(BaseConfig):
@@ -112,8 +112,8 @@ class FilterBy:
         if dependency_class is cls:
             return cls  # pragma: no cover
         data_cls = dataclass(dependency_class, config=cls.ModelConfig)
-        cls.fields = data_cls.__pydantic_model__.__fields__
-        return type(cls.__name__, (cls, data_cls), {})
+        fields = data_cls.__pydantic_model__.__fields__
+        return type(cls.__name__, (cls, data_cls), {'fields': fields})
 
     def items(self) -> Iterator[Tuple[str, Any]]:
         for key in self.fields.keys():
