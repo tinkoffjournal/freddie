@@ -141,7 +141,9 @@ class GenericModelViewSet(GenericViewSet):
         for field_name, db_field in model_fields.items():
             # Foreign key ID
             if db_field is None and field_name.endswith(FK_FIELD_POSTFIX):
-                selected.add(self._model_fields.get(field_name[: -len(FK_FIELD_POSTFIX)]))
+                fk_field = self._model_fields.get(field_name[: -len(FK_FIELD_POSTFIX)])
+                if fk_field:
+                    selected.add(fk_field)
 
             # Model property/getter method decorated with @depends_on
             elif db_field is None:
