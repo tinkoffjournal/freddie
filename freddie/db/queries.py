@@ -12,6 +12,7 @@ class Prefetch(NamedTuple):
     field: 'ManyToManyField'
     attr_name: str
     ids_only: bool = False
+    relation_fields: Iterable[str] = []
 
 
 async def prefetch_related(
@@ -21,7 +22,7 @@ async def prefetch_related(
 ) -> AsyncIterator[Model]:
     ids = set(map(attrgetter('id'), objects))
     prefetched_data: Dict[str, DefaultDict] = {}
-    for (field, attr_name, ids_only) in config:
+    for (field, attr_name, ids_only, relation_fields) in config:
         mapping = defaultdict(list)
         related_model = field.rel_model
         related_model_keys = field.rel_model_keys
@@ -41,6 +42,12 @@ async def prefetch_related(
                 }
                 if as_objects:
                     related = related_model(**related)
+            if not ids_only and relation_fields:
+                for relation_field in relation_fields:
+                    if as_objects:
+                        setattr(related, relation_field, relation[relation_field])
+                    else:
+                        related[relation_field] = relation[relation_field]
             mapping[obj_id].append(related)
 
         prefetched_data[attr_name] = mapping
@@ -53,7 +60,7 @@ async def prefetch_related(
 
 async def get_related(pk: Any, config: Iterable[Prefetch]) -> Dict[str, Tuple[Any, ...]]:
     related = {}
-    for (field, attr_name, ids_only) in config:
+    for (field, attr_name, ids_only, relation_fields) in config:
         model = field.rel_model
         builder = field(pk)
         retrieved_fields = [model.pk_field()] if ids_only else None
