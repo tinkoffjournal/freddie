@@ -4,7 +4,7 @@ from typing import List, Union
 from fastapi import FastAPI, Request
 from pydantic import BaseSettings, constr
 
-from freddie import Schema, __version__ as freddie_version
+from freddie import Schema
 from freddie.db import Database, DatabaseManager
 from freddie.db.models import (
     CharField,
@@ -308,7 +308,7 @@ class TestDatabaseViewSet(
         slug: str = None
 
 
-app = FastAPI(title='🕺 Freddie', version=freddie_version)
+app = FastAPI(title='🕺 Freddie')
 app.include_router(TestViewSet(), prefix='/unvalidated')
 app.include_router(TestViewSet(validate_response=True), prefix='/validated')
 app.include_router(TestViewSetSync(), prefix='/sync')

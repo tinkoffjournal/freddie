@@ -372,6 +372,13 @@ for which we additionaly get non-default nickname field
 - [ ] More advanced filter operators (not/in/lt/gt etc.)
 - [ ] Viewset's default response class schema description & inclusion into API schema (correct API client code generation when using enveloped responses)
 
+## Local development & Testing
+
+```bash
+make dev && . venv/bin/activate
+make test
+```
+
 ## Why is it called _Freddie_?
 
 Because the backend of [Tinkoff Journal](https://journal.tinkoff.ru/?utm_source=freddie) content API,

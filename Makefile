@@ -1,5 +1,6 @@
 .DEFAULT_GOAL := fmt
 DIR = freddie
+VENV = venv
 
 fmt:
 	isort $(DIR)
@@ -27,3 +28,8 @@ run:
 
 db:
 	python -m tests.main create-db
+
+dev:
+	python3 -m venv $(VENV) --clear --upgrade-deps
+	$(VENV)/bin/pip install flit
+	$(VENV)/bin/flit install --env --symlink
