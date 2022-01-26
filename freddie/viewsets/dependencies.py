@@ -13,8 +13,8 @@ from ..schemas import ResponseFieldsConfig, SchemaFields
 class Paginator:
     limit: int
     offset: int
-    default_limit: int = 100
-    max_limit: int = 1000
+    default_limit: int = 50
+    max_limit: int = 100
     default_offset: int = 0
     max_offset: Optional[int] = None
     PARAM_NAME: str = 'paginator'
