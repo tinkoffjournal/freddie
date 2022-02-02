@@ -7,6 +7,7 @@ from pydantic import BaseSettings, constr
 from freddie import Schema
 from freddie.db import Database, DatabaseManager
 from freddie.db.models import (
+    BooleanField,
     CharField,
     ForeignKeyField,
     JSONField,
@@ -207,15 +208,22 @@ class BaseDBModel(Model):
         database = db
 
 
+class Tag(BaseDBModel):
+    name = CharField(max_length=127, null=False)
+    slug = CharField(max_length=127, null=False, unique=True)
+
+
 class Author(BaseDBModel):
     first_name = CharField(max_length=127, null=False)
     last_name = CharField(max_length=127, null=True)
     nickname = CharField(max_length=127, null=False, unique=True)
+    tags = ManyToManyField(Tag, 'AuthorTags')
 
 
-class Tag(BaseDBModel):
-    name = CharField(max_length=127, null=False)
-    slug = CharField(max_length=127, null=False, unique=True)
+class AuthorTags(BaseDBModel, ThroughModel):
+    tag = ForeignKeyField(Tag, on_delete='CASCADE')
+    author = ForeignKeyField(Author, on_delete='CASCADE')
+    is_notifications_on = BooleanField(default=True)
 
 
 class Post(BaseDBModel):
