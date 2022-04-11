@@ -104,6 +104,21 @@ class TestSchemaFields:
     def test_fields_allowed_max_length(self, field_name, length):
         assert Constrained.get_field_max_length(field_name) == length
 
+    @mark.asyncio
+    @mark.parametrize('value', [False, '', []])
+    async def test_no_implicit_cast_to_bool_on_getattr(self, value):
+        class Obj:
+            some_field = value
+
+        result = await Schema._getattr(Obj, 'some_field', default='default')
+
+        assert result == value
+
+    @mark.asyncio
+    async def test_getattr_uses_default_if_attr_doesnt_exist(self):
+        result = await Schema._getattr(object(), 'some_field', default='default')
+        assert result == 'default'
+
 
 @mark.parametrize('component_name', [42, 'kebab-cased-name', 'illegal chars*', 'кулебяка', ''])
 def test_invalid_vschema_component_names(component_name):
