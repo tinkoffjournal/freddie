@@ -177,7 +177,7 @@ class Schema(BaseModel):
             value = await value
         if is_async_iterable(value):
             value = [val async for val in value]
-        return value or default
+        return default if value is None else value
 
 
 class ApiComponentName(str):
