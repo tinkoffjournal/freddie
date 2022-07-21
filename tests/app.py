@@ -50,6 +50,7 @@ settings = Settings(_env_file='.env')
 db = Database(
     database=settings.postgres_db,
     user=settings.postgres_user,
+    password=settings.postgres_password,
     host=settings.postgres_host,
     port=settings.postgres_port,
 )
