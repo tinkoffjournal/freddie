@@ -245,7 +245,7 @@ class ModelRetrieveViewset(GenericModelViewSet, RetrieveViewset):
 
 
 class ModelListViewset(GenericModelViewSet, ListViewset):
-    async def list(
+    async def get_list(
         self,
         *,
         request: Request,
