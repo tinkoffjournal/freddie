@@ -50,6 +50,7 @@ settings = Settings(_env_file='.env')
 db = Database(
     database=settings.postgres_db,
     user=settings.postgres_user,
+    password=settings.postgres_password,
     host=settings.postgres_host,
     port=settings.postgres_port,
 )
@@ -81,7 +82,7 @@ test_items_seq = [test_item, Item(id=43, title='Hi')]
 class TestViewSet(ViewSet):
     schema = Item
 
-    async def list(self, *, request: Request, **params) -> List[Item]:
+    async def get_list(self, *, request: Request, **params) -> List[Item]:
         return test_items_seq
 
     async def retrieve(self, pk, *, request: Request, **params) -> Item:
@@ -114,7 +115,7 @@ class TestViewSet(ViewSet):
 
 
 class TestViewSetSync(TestViewSet):
-    def list(self, *, request: Request, **params) -> List[Item]:
+    def get_list(self, *, request: Request, **params) -> List[Item]:
         return test_items_seq
 
     def retrieve(self, pk, *, request: Request, **params) -> Item:
@@ -133,7 +134,7 @@ class TestViewSetSync(TestViewSet):
 class Paginated(PaginatedListViewset, ListViewset):
     schema = Item
 
-    async def list(self, *, paginator, **params):
+    async def get_list(self, *, paginator, **params):
         return Item.paginate(paginator.limit, paginator.offset)
 
 
@@ -145,7 +146,7 @@ class FieldedItem(Item):
 class Fielded(FieldedRetrieveViewset, FieldedListViewset, RetrieveViewset, ListViewset):
     schema = FieldedItem
 
-    async def list(self, *, fields, **params):
+    async def get_list(self, *, fields, **params):
         for item in self.schema.paginate(3):
             yield item
 

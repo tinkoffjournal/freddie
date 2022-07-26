@@ -1,4 +1,5 @@
-from abc import ABC, abstractmethod
+import warnings
+from abc import ABC, ABCMeta, abstractmethod
 from http import HTTPStatus
 from typing import Any, AsyncIterable, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
 from uuid import UUID
@@ -152,7 +153,16 @@ def _get_pk_type_choices(pk_type: Type) -> Iterable[Type]:
         yield type_
 
 
-class ListViewset(GenericViewSet):
+class DeprecationChecker(ABCMeta):
+    def __new__(mcs, name, bases, dct):
+        if name != 'ListViewset' and 'list' in dct:
+            warnings.warn(
+                f'{name}.list method is deprecated, use get_list instead', DeprecationWarning
+            )
+        return super().__new__(mcs, name, bases, dct)
+
+
+class ListViewset(GenericViewSet, metaclass=DeprecationChecker):
     def get_list_dependencies(self) -> 'PredefinedDependencies':
         return ()
 
@@ -160,14 +170,16 @@ class ListViewset(GenericViewSet):
         super().api_actions()
         status_code = int(HTTPStatus.OK)
         response_model = List[self.schema]  # type: ignore
+        # todo remove it in next releases
+        method = getattr(self, 'list', self.get_list)
 
         async def endpoint(*, request: Request, **params: Any) -> Any:
-            objects = await self.perform_api_action(self.list, request=request, **params)
+            objects = await self.perform_api_action(method, request=request, **params)
             return await self.response(objects, fields=params.get(FIELDS_PARAM_NAME))
 
         self.add_api_route(
             '/',
-            patch_endpoint_signature(endpoint, self.list, self.get_list_dependencies()),
+            patch_endpoint_signature(endpoint, method, self.get_list_dependencies()),
             methods=['GET'],
             status_code=status_code,
             response_class=_default_response_cls if self.validate_response else Response,
@@ -179,8 +191,7 @@ class ListViewset(GenericViewSet):
             tags=self._openapi_tags,
         )
 
-    @abstractmethod
-    async def list(self, *, request: Request, **params: Any) -> Union[Iterable, AsyncIterable]:
+    async def get_list(self, *, request: Request, **params: Any) -> Union[Iterable, AsyncIterable]:
         ...  # pragma: no cover
 
 

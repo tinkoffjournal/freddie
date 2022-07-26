@@ -2,10 +2,10 @@ from typing import Union
 from uuid import UUID
 
 from pydantic import BaseModel, create_model
-from pytest import mark, raises
+from pytest import deprecated_call, mark, raises
 
 from freddie.schemas import Schema
-from freddie.viewsets.generics import GenericViewSet
+from freddie.viewsets.generics import GenericViewSet, ListViewset
 
 from .utils import create_schema_from_config
 
@@ -27,6 +27,16 @@ class TestViewSetInit:
     def test_viewset_without_actions(self):
         with raises(TypeError):
             InvalidViewSet()
+
+    def test_list_viewset_deprecation_warning(self):
+        expected_msg = 'ViewSetOldList.list method is deprecated, use get_list instead'
+
+        with deprecated_call() as msg:
+            class ViewSetOldList(ListViewset):
+                def list(self):
+                    pass
+
+        assert str(msg.list[0].message) == expected_msg
 
     @mark.parametrize('schema', ['not_a_class', BaseModel])
     def test_invalid_viewset_schema_class(self, schema):
