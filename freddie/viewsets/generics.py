@@ -169,7 +169,7 @@ class ListViewset(GenericViewSet, metaclass=DeprecationChecker):
     def api_actions(self) -> None:
         super().api_actions()
         status_code = int(HTTPStatus.OK)
-        response_model = List[self.schema]  # type: ignore
+        response_model = getattr(self, 'list_schema', List[self.schema])  # type: ignore
         # todo remove it in next releases
         method = getattr(self, 'list', self.get_list)
 
