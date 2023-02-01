@@ -2,7 +2,7 @@ from enum import Enum
 from typing import List, Union
 
 from fastapi import FastAPI, Request
-from pydantic import BaseSettings, constr
+from pydantic import BaseModel, BaseSettings, constr
 
 from freddie import Schema
 from freddie.db import Database, DatabaseManager
@@ -29,6 +29,7 @@ from freddie.viewsets import (
     ListViewset,
     ModelViewSet,
     PaginatedListViewset,
+    ReadOnlyViewSet,
     RetrieveViewset,
     ViewSet,
     route,
@@ -73,6 +74,16 @@ class Item(Schema):
         for i in range(1, limit + 1):
             item_id = i + offset
             yield cls(id=item_id, title='Freddie')
+
+
+class EnvelopedItemResponse(BaseModel):
+    status: str
+    data: Item
+
+
+class EnvelopedListItemResponse(BaseModel):
+    status: str
+    data: List[Item]
 
 
 test_item = Item(title='Hello')
@@ -136,6 +147,18 @@ class Paginated(PaginatedListViewset, ListViewset):
 
     async def get_list(self, *, paginator, **params):
         return Item.paginate(paginator.limit, paginator.offset)
+
+
+class TestResponsesSchemaViewSet(ReadOnlyViewSet):
+    schema = Item
+    list_schema = EnvelopedListItemResponse
+    detail_schema = EnvelopedItemResponse
+
+    def get_list(self, *, request: Request, **params) -> List[Item]:
+        return test_items_seq
+
+    def retrieve(self, pk, *, request: Request, **params) -> Item:
+        return test_item
 
 
 class FieldedItem(Item):
@@ -335,6 +358,7 @@ app.include_router(
 app.include_router(
     ListCreateModelViewSet(model=Post, schema=PostSchema.optional()), prefix='/post-create'
 )
+app.include_router(TestResponsesSchemaViewSet(), prefix='/responses')
 
 
 @app.api_route('/notfound')

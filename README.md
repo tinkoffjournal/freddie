@@ -43,6 +43,7 @@ pip install freddie[db]
 Let's create a viewset for managing content posts. It will provide full kit of actions with simple mock data:
 
 ```python
+from typing import List
 from fastapi import FastAPI
 from freddie.exceptions import NotFound
 from freddie.schemas import Schema
@@ -71,6 +72,8 @@ class PostViewSet(
     ViewSet
 ):
     schema = Post
+    list_schema = List[Post]  # custom list response schema
+    detail_schema = Post  # custom detail response schema
 
     # Default viewset pagination options are set here
     class Paginator:
