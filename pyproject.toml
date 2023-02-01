@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "Freddie"
-version = "0.9.7"
+version = "0.9.8"
 description = "FastAPI tools library for building DRF-like viewsets"
 authors = [
   {name = "Arseny Gabdullin", email = "a.gabdullin@tinkoff.ru"}
