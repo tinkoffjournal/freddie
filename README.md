@@ -73,6 +73,7 @@ class PostViewSet(
 ):
     schema = Post
     list_schema = List[Post]  # custom list response schema
+    detail_schema = Post  # custom detail response schema
 
     # Default viewset pagination options are set here
     class Paginator:

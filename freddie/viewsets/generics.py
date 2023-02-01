@@ -204,6 +204,7 @@ class RetrieveViewset(GenericViewSet):
 
         pk_type = self.pk_type
         status_code = int(HTTPStatus.OK)
+        response_model = getattr(self, 'detail_schema', self.schema)  # type: ignore
 
         async def endpoint(
             pk: pk_type = self.pk_parameter,  # type: ignore
@@ -220,9 +221,9 @@ class RetrieveViewset(GenericViewSet):
             methods=['GET'],
             status_code=status_code,
             response_class=_default_response_cls if self.validate_response else Response,
-            response_model=self.schema if self.validate_response else None,
+            response_model=response_model if self.validate_response else None,
             response_description=f'{self._component_name.title()} instance retrieved',
-            responses={**self.notfound_response(), status_code: {'model': self.schema}},
+            responses={**self.notfound_response(), status_code: {'model': response_model}},
             operation_id=f'get_{self._component_name}',
             summary=f'Retrieve {self._component_name}',
             tags=self._openapi_tags,

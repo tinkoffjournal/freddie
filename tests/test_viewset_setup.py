@@ -21,6 +21,14 @@ class TestBasicViewSet(WithClient):
         response = await self.client.get('/openapi.json')
         assert response.status_code == HTTPStatus.OK
 
+    @mark.parametrize('path, model', [('/responses/', 'EnvelopedListItemResponse'),
+                                      ('/responses/{pk}', 'EnvelopedItemResponse')])
+    async def test_api_schema(self, path, model):
+        response = await self.client.get('/openapi.json')
+        assert response.json()['paths'][path]['get']['responses']['200']['content'][
+            'application/json']['schema'][
+            '$ref'] == f'#/components/schemas/{model}'
+
     @mark.parametrize(**api_prefixes)
     async def test_list(self, prefix):
         response = await self.client.get(prefix + '/')
